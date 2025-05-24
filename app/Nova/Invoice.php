@@ -92,16 +92,62 @@ class Invoice extends Resource
                 ->asHtml()
                 ->displayUsing(function ($status, $resource) {
                     $statusDisplay = match($status) {
-                        InvoiceModel::STATUS_DRAFT => ['label' => 'Draft', 'class' => 'bg-gray-100 text-gray-800'],
-                        InvoiceModel::STATUS_SENT => ['label' => 'Sent', 'class' => 'bg-blue-100 text-blue-800'],
-                        InvoiceModel::STATUS_PAID => ['label' => 'Paid', 'class' => 'bg-green-100 text-green-800'],
-                        InvoiceModel::STATUS_OVERDUE => ['label' => 'Overdue', 'class' => 'bg-red-100 text-red-800'],
-                        InvoiceModel::STATUS_CANCELLED => ['label' => 'Cancelled', 'class' => 'bg-yellow-100 text-yellow-800'],
-                        default => ['label' => ucfirst($status ?? 'Unknown'), 'class' => 'bg-gray-100 text-gray-800'],
+                        InvoiceModel::STATUS_DRAFT => [
+                            'label' => 'Draft',
+                            'icon' => '📝',
+                            'bg' => 'bg-gradient-to-r from-slate-100 to-slate-200',
+                            'text' => 'text-slate-700',
+                            'border' => 'border-slate-300',
+                            'shadow' => 'shadow-slate-200'
+                        ],
+                        InvoiceModel::STATUS_SENT => [
+                            'label' => 'Sent',
+                            'icon' => '📤',
+                            'bg' => 'bg-gradient-to-r from-blue-100 to-blue-200',
+                            'text' => 'text-blue-700',
+                            'border' => 'border-blue-300',
+                            'shadow' => 'shadow-blue-200'
+                        ],
+                        InvoiceModel::STATUS_PAID => [
+                            'label' => 'Paid',
+                            'icon' => '✅',
+                            'bg' => 'bg-gradient-to-r from-emerald-100 to-emerald-200',
+                            'text' => 'text-emerald-700',
+                            'border' => 'border-emerald-300',
+                            'shadow' => 'shadow-emerald-200'
+                        ],
+                        InvoiceModel::STATUS_OVERDUE => [
+                            'label' => 'Overdue',
+                            'icon' => '⚠️',
+                            'bg' => 'bg-gradient-to-r from-red-100 to-red-200',
+                            'text' => 'text-red-700',
+                            'border' => 'border-red-300',
+                            'shadow' => 'shadow-red-200'
+                        ],
+                        InvoiceModel::STATUS_CANCELLED => [
+                            'label' => 'Cancelled',
+                            'icon' => '❌',
+                            'bg' => 'bg-gradient-to-r from-amber-100 to-amber-200',
+                            'text' => 'text-amber-700',
+                            'border' => 'border-amber-300',
+                            'shadow' => 'shadow-amber-200'
+                        ],
+                        default => [
+                            'label' => ucfirst($status ?? 'Unknown'),
+                            'icon' => '❓',
+                            'bg' => 'bg-gradient-to-r from-gray-100 to-gray-200',
+                            'text' => 'text-gray-700',
+                            'border' => 'border-gray-300',
+                            'shadow' => 'shadow-gray-200'
+                        ],
                     };
 
-                    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' .
-                           $statusDisplay['class'] . '">' . $statusDisplay['label'] . '</span>';
+                    return '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ' .
+                           $statusDisplay['bg'] . ' ' . $statusDisplay['text'] . ' ' . $statusDisplay['border'] .
+                           ' shadow-sm ' . $statusDisplay['shadow'] . ' hover:shadow-md transition-all duration-200">' .
+                           '<span class="text-base leading-none">' . $statusDisplay['icon'] . '</span>' .
+                           '<span class="tracking-wide">' . $statusDisplay['label'] . '</span>' .
+                           '</div>';
                 }),
 
             Select::make('Status')
