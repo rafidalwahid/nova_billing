@@ -32,6 +32,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\ProductFeature::class,
             \App\Nova\Order::class,
             \App\Nova\OrderItem::class,
+            \App\Nova\Invoice::class,
+            \App\Nova\InvoiceLine::class,
         ]);
 
         // Configure custom navigation
@@ -52,6 +54,11 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 \Laravel\Nova\Menu\MenuSection::make('Order Management', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Order::class),
                 ])->icon('shopping-cart')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Invoice Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Invoice::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\InvoiceLine::class),
+                ])->icon('document-text')->collapsible(),
 
                 \Laravel\Nova\Menu\MenuSection::make('Staff Management', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\AdminUser::class),

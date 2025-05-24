@@ -68,9 +68,17 @@ class Customer extends Model
         return $this->hasMany(Order::class);
     }
 
+    /**
+     * Get the invoices for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     // Subscription relationship removed - will be implemented later
 
     // Ticket relationship removed - will be implemented later
-
-    // Invoice relationship removed - will be implemented later
 }
