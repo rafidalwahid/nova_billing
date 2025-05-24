@@ -18,7 +18,17 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         parent::boot();
         Nova::withBreadcrumbs();
 
-        //
+        // Register Nova resources
+        Nova::resources([
+            \App\Nova\User::class,
+            \App\Nova\Customer::class,
+            \App\Nova\AdminUser::class,
+            \App\Nova\Role::class,
+            \App\Nova\Permission::class,
+            \App\Nova\Department::class,
+            \App\Nova\Product::class,
+            \App\Nova\ProductPricing::class,
+        ]);
     }
 
     /**
@@ -70,6 +80,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     {
         return [];
     }
+
+
 
     /**
      * Register any application services.
