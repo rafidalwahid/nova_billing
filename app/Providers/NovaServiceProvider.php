@@ -30,6 +30,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\Product::class,
             \App\Nova\ProductPricing::class,
             \App\Nova\ProductFeature::class,
+            \App\Nova\Order::class,
+            \App\Nova\OrderItem::class,
         ]);
 
         // Configure custom navigation
@@ -46,6 +48,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Product::class),
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\ProductFeature::class),
                 ])->icon('cube')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Order Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Order::class),
+                ])->icon('shopping-cart')->collapsible(),
 
                 \Laravel\Nova\Menu\MenuSection::make('Staff Management', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\AdminUser::class),

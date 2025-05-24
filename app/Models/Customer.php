@@ -27,7 +27,7 @@ class Customer extends Model
         'status',
         'last_login',
     ];
-    
+
     /**
      * Get the customer's full name.
      */
@@ -58,7 +58,15 @@ class Customer extends Model
         return $this->morphOne(User::class, 'userable');
     }
 
-    // Order relationship removed - will be implemented later
+    /**
+     * Get the orders for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
 
     // Subscription relationship removed - will be implemented later
 
