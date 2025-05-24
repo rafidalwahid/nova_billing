@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             PermissionSeeder::class,
+            RolePermissionSeeder::class, // Add role-permission associations
             DepartmentSeeder::class,
             AdminUserSeeder::class,
             CustomerSeeder::class,

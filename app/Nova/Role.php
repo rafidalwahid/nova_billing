@@ -58,7 +58,15 @@ class Role extends Resource
                 ->sortable()
                 ->hideWhenCreating(),
 
-            BelongsToMany::make('Permissions'),
+            BelongsToMany::make('Permissions')
+                ->searchable()
+                ->showCreateRelationButton()
+                ->display('name')
+                ->fields(function () {
+                    return [
+                        // Pivot table fields can be added here if needed
+                    ];
+                }),
 
             HasMany::make('Staff', 'staff', AdminUser::class),
         ];

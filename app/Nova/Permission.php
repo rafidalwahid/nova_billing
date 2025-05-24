@@ -60,7 +60,10 @@ class Permission extends Resource
                 ->sortable()
                 ->rules('required', 'max:100'),
 
-            BelongsToMany::make('Roles'),
+            BelongsToMany::make('Roles')
+                ->searchable()
+                ->showCreateRelationButton()
+                ->display('name'),
         ];
     }
 
