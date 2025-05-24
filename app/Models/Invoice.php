@@ -111,6 +111,23 @@ class Invoice extends Model
     }
 
     /**
+     * Get the formatted status display.
+     */
+    protected function statusDisplay(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => match($this->status) {
+                self::STATUS_DRAFT => 'Draft',
+                self::STATUS_SENT => 'Sent',
+                self::STATUS_PAID => 'Paid',
+                self::STATUS_OVERDUE => 'Overdue',
+                self::STATUS_CANCELLED => 'Cancelled',
+                default => ucfirst($this->status ?? 'Unknown'),
+            },
+        );
+    }
+
+    /**
      * Check if the invoice is overdue.
      */
     protected function isOverdue(): Attribute

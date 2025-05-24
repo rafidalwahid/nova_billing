@@ -38,6 +38,11 @@ class PermissionSeeder extends Seeder
                 'Delete Invoice Records' => 'Remove incorrect or duplicate invoices from the billing system',
                 'Record Invoice Payments' => 'Mark invoices as paid and record payment details and transaction information',
                 'Process Customer Refunds' => 'Issue refunds for overpayments, cancellations, and billing adjustments',
+                'Send Invoice Emails' => 'Email invoices to customers with customizable subject and message content',
+                'Mark Invoices as Paid' => 'Quick action to mark invoices as paid and update payment status',
+                'Generate Invoices from Orders' => 'Automatically create invoices from completed customer orders',
+                'Manage Invoice Line Items' => 'Create, edit, and delete individual line items within invoices',
+                'View Invoice Line Items' => 'Access detailed breakdown of invoice line items and billing components',
             ],
             'Product Catalog' => [
                 'View Product Listings' => 'Browse product catalog, pricing information, and service specifications',

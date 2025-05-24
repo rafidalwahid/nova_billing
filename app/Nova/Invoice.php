@@ -87,22 +87,22 @@ class Invoice extends Resource
                 ->creationRules('unique:invoices,invoice_number')
                 ->updateRules('unique:invoices,invoice_number,{{resourceId}}'),
 
-            Badge::make('Status')
-                ->map([
-                    InvoiceModel::STATUS_DRAFT => 'secondary',
-                    InvoiceModel::STATUS_SENT => 'info',
-                    InvoiceModel::STATUS_PAID => 'success',
-                    InvoiceModel::STATUS_OVERDUE => 'danger',
-                    InvoiceModel::STATUS_CANCELLED => 'warning',
-                ])
-                ->labels([
-                    InvoiceModel::STATUS_DRAFT => 'Draft',
-                    InvoiceModel::STATUS_SENT => 'Sent',
-                    InvoiceModel::STATUS_PAID => 'Paid',
-                    InvoiceModel::STATUS_OVERDUE => 'Overdue',
-                    InvoiceModel::STATUS_CANCELLED => 'Cancelled',
-                ])
-                ->sortable(),
+            Text::make('Status')
+                ->sortable()
+                ->asHtml()
+                ->displayUsing(function ($status, $resource) {
+                    $statusDisplay = match($status) {
+                        InvoiceModel::STATUS_DRAFT => ['label' => 'Draft', 'class' => 'bg-gray-100 text-gray-800'],
+                        InvoiceModel::STATUS_SENT => ['label' => 'Sent', 'class' => 'bg-blue-100 text-blue-800'],
+                        InvoiceModel::STATUS_PAID => ['label' => 'Paid', 'class' => 'bg-green-100 text-green-800'],
+                        InvoiceModel::STATUS_OVERDUE => ['label' => 'Overdue', 'class' => 'bg-red-100 text-red-800'],
+                        InvoiceModel::STATUS_CANCELLED => ['label' => 'Cancelled', 'class' => 'bg-yellow-100 text-yellow-800'],
+                        default => ['label' => ucfirst($status ?? 'Unknown'), 'class' => 'bg-gray-100 text-gray-800'],
+                    };
+
+                    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' .
+                           $statusDisplay['class'] . '">' . $statusDisplay['label'] . '</span>';
+                }),
 
             Select::make('Status')
                 ->options([
@@ -215,6 +215,10 @@ class Invoice extends Resource
      */
     public function actions(NovaRequest $request): array
     {
-        return [];
+        return [
+            \App\Nova\Actions\MarkAsPaid::make(),
+            \App\Nova\Actions\RecordPayment::make(),
+            \App\Nova\Actions\SendInvoiceEmail::make(),
+        ];
     }
 }

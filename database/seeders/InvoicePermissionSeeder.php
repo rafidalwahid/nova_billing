@@ -2,23 +2,58 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
-class RolePermissionSeeder extends Seeder
+class InvoicePermissionSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        // Get all roles with updated names
+        // New invoice management permissions
+        $newPermissions = [
+            'Send Invoice Emails' => 'Email invoices to customers with customizable subject and message content',
+            'Mark Invoices as Paid' => 'Quick action to mark invoices as paid and update payment status',
+            'Generate Invoices from Orders' => 'Automatically create invoices from completed customer orders',
+            'Manage Invoice Line Items' => 'Create, edit, and delete individual line items within invoices',
+            'View Invoice Line Items' => 'Access detailed breakdown of invoice line items and billing components',
+        ];
+
+        foreach ($newPermissions as $permissionName => $permissionDescription) {
+            // Check if permission already exists
+            $existingPermission = Permission::where('slug', Str::slug($permissionName))->first();
+
+            if (!$existingPermission) {
+                Permission::create([
+                    'name' => $permissionName,
+                    'slug' => Str::slug($permissionName),
+                    'description' => $permissionDescription,
+                    'module' => 'Invoice Management',
+                ]);
+
+                $this->command->info("Created permission: {$permissionName}");
+            } else {
+                $this->command->warn("Permission already exists: {$permissionName}");
+            }
+        }
+
+        // Update role permissions
+        $this->updateRolePermissions();
+    }
+
+    /**
+     * Update role permissions to include new invoice permissions
+     */
+    private function updateRolePermissions(): void
+    {
         $systemAdmin = Role::where('name', 'System Administrator')->first();
         $billingManager = Role::where('name', 'Billing Manager')->first();
         $supportRep = Role::where('name', 'Customer Support Representative')->first();
         $financialController = Role::where('name', 'Financial Controller')->first();
-        $salesRep = Role::where('name', 'Sales Representative')->first();
 
         // Get all permissions
         $allPermissions = Permission::all();
@@ -26,7 +61,7 @@ class RolePermissionSeeder extends Seeder
         // System Administrator gets ALL permissions
         if ($systemAdmin) {
             $systemAdmin->permissions()->sync($allPermissions->pluck('id')->toArray());
-            echo "Assigned " . $allPermissions->count() . " permissions to System Administrator\n";
+            $this->command->info("Updated System Administrator permissions");
         }
 
         // Billing Manager gets comprehensive billing and management permissions
@@ -45,10 +80,10 @@ class RolePermissionSeeder extends Seeder
                 'remove-server-resources',
             ])->get();
             $billingManager->permissions()->sync($billingManagerPermissions->pluck('id')->toArray());
-            echo "Assigned " . $billingManagerPermissions->count() . " permissions to Billing Manager\n";
+            $this->command->info("Updated Billing Manager permissions");
         }
 
-        // Customer Support Representative gets customer and support focused permissions
+        // Customer Support Representative gets limited invoice permissions
         if ($supportRep) {
             $supportPermissions = Permission::whereIn('module', [
                 'System Dashboard',
@@ -61,7 +96,7 @@ class RolePermissionSeeder extends Seeder
                 'view-product-listings',
             ])->get();
             $supportRep->permissions()->sync($supportPermissions->pluck('id')->toArray());
-            echo "Assigned " . $supportPermissions->count() . " permissions to Customer Support Representative\n";
+            $this->command->info("Updated Customer Support Representative permissions");
         }
 
         // Financial Controller gets financial and reporting permissions
@@ -76,22 +111,7 @@ class RolePermissionSeeder extends Seeder
                 'view-support-tickets',
             ])->get();
             $financialController->permissions()->sync($financialPermissions->pluck('id')->toArray());
-            echo "Assigned " . $financialPermissions->count() . " permissions to Financial Controller\n";
-        }
-
-        // Sales Representative gets sales and customer acquisition permissions
-        if ($salesRep) {
-            $salesPermissions = Permission::whereIn('module', [
-                'System Dashboard',
-                'Customer Management',
-                'Order Processing',
-                'Product Catalog',
-            ])->orWhereIn('slug', [
-                'view-invoice-records',
-                'view-support-tickets',
-            ])->get();
-            $salesRep->permissions()->sync($salesPermissions->pluck('id')->toArray());
-            echo "Assigned " . $salesPermissions->count() . " permissions to Sales Representative\n";
+            $this->command->info("Updated Financial Controller permissions");
         }
     }
 }
