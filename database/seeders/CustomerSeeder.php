@@ -19,7 +19,7 @@ class CustomerSeeder extends Seeder
             [
                 'user' => [
                     'name' => 'John Doe',
-                    'email' => 'customer@example.com',
+                    'email' => 'john.doe@customer.com',
                     'password' => Hash::make('password'),
                 ],
                 'profile' => [
@@ -39,7 +39,7 @@ class CustomerSeeder extends Seeder
             [
                 'user' => [
                     'name' => 'Jane Smith',
-                    'email' => 'jane@example.com',
+                    'email' => 'jane.smith@techstartup.com',
                     'password' => Hash::make('password'),
                 ],
                 'profile' => [
@@ -59,7 +59,7 @@ class CustomerSeeder extends Seeder
             [
                 'user' => [
                     'name' => 'Alex Johnson',
-                    'email' => 'alex@example.com',
+                    'email' => 'alex.johnson@consulting.biz',
                     'password' => Hash::make('password'),
                 ],
                 'profile' => [
@@ -79,7 +79,7 @@ class CustomerSeeder extends Seeder
             [
                 'user' => [
                     'name' => 'Maria Garcia',
-                    'email' => 'maria@example.com',
+                    'email' => 'maria.garcia@hostingpro.net',
                     'password' => Hash::make('password'),
                 ],
                 'profile' => [
@@ -99,7 +99,7 @@ class CustomerSeeder extends Seeder
             [
                 'user' => [
                     'name' => 'David Lee',
-                    'email' => 'david@example.com',
+                    'email' => 'david.lee@leetech.org',
                     'password' => Hash::make('password'),
                 ],
                 'profile' => [
@@ -121,7 +121,7 @@ class CustomerSeeder extends Seeder
         foreach ($customers as $customer) {
             // Create the customer profile
             $customerModel = Customer::create($customer['profile']);
-            
+
             // Create the user with polymorphic relationship
             $user = new User($customer['user']);
             $customerModel->user()->save($user);

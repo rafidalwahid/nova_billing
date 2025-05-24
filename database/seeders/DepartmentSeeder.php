@@ -14,24 +14,29 @@ class DepartmentSeeder extends Seeder
     {
         $departments = [
             [
-                'name' => 'Sales',
-                'description' => 'Sales department',
-                'email' => 'sales@example.com',
+                'name' => 'Information Technology',
+                'description' => 'System administration, infrastructure management, security, and technical operations for the billing platform',
+                'email' => 'it@billingcorp.com',
             ],
             [
-                'name' => 'Technical Support',
-                'description' => 'Technical support team',
-                'email' => 'support@example.com',
+                'name' => 'Revenue Operations',
+                'description' => 'Billing processes, invoice generation, payment processing, and revenue cycle management',
+                'email' => 'revenue@billingcorp.com',
             ],
             [
-                'name' => 'Billing',
-                'description' => 'Billing and payments department',
-                'email' => 'billing@example.com',
+                'name' => 'Customer Experience',
+                'description' => 'Customer support, account management, issue resolution, and client relationship maintenance',
+                'email' => 'support@billingcorp.com',
             ],
             [
-                'name' => 'Management',
-                'description' => 'Management team',
-                'email' => 'management@example.com',
+                'name' => 'Financial Services',
+                'description' => 'Financial analysis, accounting, payment reconciliation, and financial reporting and compliance',
+                'email' => 'finance@billingcorp.com',
+            ],
+            [
+                'name' => 'Business Development',
+                'description' => 'Sales operations, client acquisition, product promotion, and market expansion activities',
+                'email' => 'sales@billingcorp.com',
             ],
         ];
 
