@@ -28,6 +28,13 @@ class Product extends Resource
     public static $title = 'name';
 
     /**
+     * The logical group associated with the resource.
+     *
+     * @var string
+     */
+    public static $group = 'Product Catalog';
+
+    /**
      * The columns that should be searched.
      *
      * @var array
@@ -106,6 +113,8 @@ class Product extends Resource
                 ->asHtml(),
 
             HasMany::make('Pricing', 'pricing', ProductPricing::class),
+
+            HasMany::make('Features', 'features', ProductFeature::class),
         ];
     }
 

@@ -25,6 +25,13 @@ class Department extends Resource
     public static $title = 'name';
 
     /**
+     * The logical group associated with the resource.
+     *
+     * @var string
+     */
+    public static $group = 'Staff Management';
+
+    /**
      * The columns that should be searched.
      *
      * @var array
@@ -54,8 +61,10 @@ class Department extends Resource
 
             Text::make('Email')
                 ->sortable()
-                ->rules('required', 'email', 'max:254'),            HasMany::make('Staff', 'staff', AdminUser::class),
-            
+                ->rules('required', 'email', 'max:254'),
+
+            HasMany::make('Staff', 'staff', AdminUser::class),
+
             // Tickets relationship will be implemented later
         ];
     }

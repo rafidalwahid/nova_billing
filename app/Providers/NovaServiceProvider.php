@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Fortify\Features;
 use Laravel\Nova\Nova;
@@ -28,7 +29,32 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\Department::class,
             \App\Nova\Product::class,
             \App\Nova\ProductPricing::class,
+            \App\Nova\ProductFeature::class,
         ]);
+
+        // Configure custom navigation
+        Nova::mainMenu(function (Request $request) {
+            return [
+                \Laravel\Nova\Menu\MenuSection::dashboard(\App\Nova\Dashboards\Main::class)->icon('chart-bar'),
+
+                \Laravel\Nova\Menu\MenuSection::make('Customer Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\User::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Customer::class),
+                ])->icon('users')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Product Catalog', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Product::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\ProductFeature::class),
+                ])->icon('cube')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Staff Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\AdminUser::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Role::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Permission::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Department::class),
+                ])->icon('user-group')->collapsible(),
+            ];
+        });
     }
 
     /**

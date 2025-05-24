@@ -40,6 +40,16 @@ class Product extends Model
     }
 
     /**
+     * Get the product's features.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function features(): HasMany
+    {
+        return $this->hasMany(ProductFeature::class);
+    }
+
+    /**
      * Get the product's display name with type.
      */
     protected function displayName(): Attribute

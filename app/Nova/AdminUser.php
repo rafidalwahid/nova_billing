@@ -41,6 +41,13 @@ class AdminUser extends Resource
     }
 
     /**
+     * The logical group associated with the resource.
+     *
+     * @var string
+     */
+    public static $group = 'Staff Management';
+
+    /**
      * The single value that should be used to represent the resource when being displayed.
      *
      * @var string
