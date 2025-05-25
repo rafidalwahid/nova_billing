@@ -31,6 +31,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\ProductPricing::class,
             \App\Nova\ProductFeature::class,
             \App\Nova\ServerGroup::class,
+            \App\Nova\Server::class,
+            \App\Nova\HostingAccount::class,
+            \App\Nova\DomainRegistration::class,
             \App\Nova\Order::class,
             \App\Nova\OrderItem::class,
             \App\Nova\Invoice::class,
@@ -57,8 +60,14 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 \Laravel\Nova\Menu\MenuSection::make('Product Catalog', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Product::class),
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\ProductFeature::class),
-                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\ServerGroup::class),
                 ])->icon('cube')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Infrastructure Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\ServerGroup::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Server::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\HostingAccount::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\DomainRegistration::class),
+                ])->icon('server')->collapsible(),
 
                 \Laravel\Nova\Menu\MenuSection::make('Order Management', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Order::class),

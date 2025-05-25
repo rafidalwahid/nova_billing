@@ -40,13 +40,12 @@ class ServerGroup extends Model
     }
 
     /**
-     * Get the servers in this group (for future implementation).
+     * Get the servers in this group.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function servers(): HasMany
     {
-        // This will be implemented in Phase 6: Hosting Management
         return $this->hasMany(Server::class);
     }
 

@@ -21,12 +21,15 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             CustomerSeeder::class,
             ServerGroupSeeder::class, // Add server groups before products
+            ServerSeeder::class, // Add servers after server groups
             ProductSeeder::class,
             ProductFeatureSeeder::class,
             OrderSeeder::class, // Add orders before invoices
             InvoiceSeeder::class,
             PaymentSeeder::class, // Add payments after invoices
             SubscriptionSeeder::class, // Add subscriptions after orders
+            HostingAccountSeeder::class, // Add hosting accounts after subscriptions
+            DomainRegistrationSeeder::class, // Add domain registrations
             TicketSeeder::class, // Add support tickets
         ]);
     }
