@@ -62,6 +62,16 @@ class Product extends Model
     }
 
     /**
+     * Get the subscriptions for this product.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
      * Get the product's display name with type.
      */
     protected function displayName(): Attribute

@@ -38,6 +38,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\Payment::class,
             \App\Nova\PaymentMethod::class,
             \App\Nova\Transaction::class,
+            \App\Nova\Subscription::class,
+            \App\Nova\SubscriptionItem::class,
         ]);
 
         // Configure custom navigation
@@ -70,6 +72,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\PaymentMethod::class),
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Transaction::class),
                 ])->icon('credit-card')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Subscription Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Subscription::class),
+                ])->icon('refresh')->collapsible(),
 
                 \Laravel\Nova\Menu\MenuSection::make('Staff Management', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\AdminUser::class),

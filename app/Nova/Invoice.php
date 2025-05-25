@@ -81,6 +81,12 @@ class Invoice extends Resource
                 ->searchable()
                 ->hideFromIndex(),
 
+            BelongsTo::make('Subscription')
+                ->nullable()
+                ->sortable()
+                ->searchable()
+                ->hideFromIndex(),
+
             Text::make('Invoice Number')
                 ->sortable()
                 ->rules('required', 'max:50')

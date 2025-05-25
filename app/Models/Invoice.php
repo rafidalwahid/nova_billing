@@ -24,6 +24,7 @@ class Invoice extends Model
     protected $fillable = [
         'customer_id',
         'order_id',
+        'subscription_id',
         'invoice_number',
         'status',
         'subtotal',
@@ -71,6 +72,16 @@ class Invoice extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Get the subscription that this invoice is based on.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class);
     }
 
     /**
