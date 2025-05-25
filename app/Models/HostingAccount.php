@@ -11,6 +11,56 @@ use Carbon\Carbon;
 class HostingAccount extends Model
 {
     /**
+     * Boot the model and register event listeners.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validate server capacity before creating
+        static::creating(function ($hostingAccount) {
+            if ($hostingAccount->server_id) {
+                $server = Server::find($hostingAccount->server_id);
+                if ($server && !$server->hasCapacity()) {
+                    throw new \Exception("Server '{$server->name}' has reached maximum capacity ({$server->max_accounts} accounts).");
+                }
+            }
+        });
+
+        // When a hosting account is created, increment server account count
+        static::created(function ($hostingAccount) {
+            if ($hostingAccount->server_id) {
+                $hostingAccount->server()->increment('current_accounts');
+            }
+        });
+
+        // When a hosting account is deleted, decrement server account count
+        static::deleted(function ($hostingAccount) {
+            if ($hostingAccount->server_id) {
+                $hostingAccount->server()->decrement('current_accounts');
+            }
+        });
+
+        // When server_id changes, update both old and new servers
+        static::updated(function ($hostingAccount) {
+            if ($hostingAccount->isDirty('server_id')) {
+                $oldServerId = $hostingAccount->getOriginal('server_id');
+                $newServerId = $hostingAccount->server_id;
+
+                // Decrement old server
+                if ($oldServerId) {
+                    Server::where('id', $oldServerId)->decrement('current_accounts');
+                }
+
+                // Increment new server
+                if ($newServerId) {
+                    Server::where('id', $newServerId)->increment('current_accounts');
+                }
+            }
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array
@@ -31,15 +81,10 @@ class HostingAccount extends Model
         'suspended_at',
         'terminated_at',
         'disk_usage_mb',
-        'disk_limit_mb',
         'bandwidth_usage_mb',
-        'bandwidth_limit_mb',
         'email_accounts',
-        'email_limit',
         'databases',
-        'database_limit',
         'subdomains',
-        'subdomain_limit',
         'cpanel_username',
         'cpanel_password',
         'cpanel_domain',
@@ -48,10 +93,6 @@ class HostingAccount extends Model
         'last_backup',
         'ssl_enabled',
         'ssl_type',
-        'setup_fee',
-        'monthly_fee',
-        'billing_cycle',
-        'next_due_date',
         'metadata',
         'notes',
         'admin_notes',
@@ -67,21 +108,13 @@ class HostingAccount extends Model
         'suspended_at' => 'datetime',
         'terminated_at' => 'datetime',
         'last_backup' => 'datetime',
-        'next_due_date' => 'date',
         'disk_usage_mb' => 'decimal:2',
-        'disk_limit_mb' => 'decimal:2',
         'bandwidth_usage_mb' => 'decimal:2',
-        'bandwidth_limit_mb' => 'decimal:2',
         'email_accounts' => 'integer',
-        'email_limit' => 'integer',
         'databases' => 'integer',
-        'database_limit' => 'integer',
         'subdomains' => 'integer',
-        'subdomain_limit' => 'integer',
         'backup_enabled' => 'boolean',
         'ssl_enabled' => 'boolean',
-        'setup_fee' => 'decimal:2',
-        'monthly_fee' => 'decimal:2',
         'control_panel_config' => 'array',
         'metadata' => 'array',
     ];
@@ -145,6 +178,127 @@ class HostingAccount extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Get the setup fee from the subscription.
+     */
+    protected function setupFee(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->subscription?->setup_fee ?? 0,
+        );
+    }
+
+    /**
+     * Get the monthly fee from the subscription.
+     */
+    protected function monthlyFee(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->subscription?->recurring_amount ?? 0,
+        );
+    }
+
+    /**
+     * Get the billing cycle from the subscription.
+     */
+    protected function billingCycle(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->subscription?->billing_cycle ?? 'monthly',
+        );
+    }
+
+    /**
+     * Get the next due date from the subscription.
+     */
+    protected function nextDueDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->subscription?->next_billing_date,
+        );
+    }
+
+    /**
+     * Get disk limit from product features (in MB).
+     */
+    protected function diskLimitMb(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $feature = $this->product?->features()
+                    ->where('feature_key', 'disk_space')
+                    ->first();
+
+                if (!$feature) return $this->attributes['disk_limit_mb'] ?? null;
+
+                if ($feature->feature_value === 'unlimited') return null;
+
+                // Convert GB to MB
+                return (float) $feature->feature_value * 1024;
+            },
+        );
+    }
+
+    /**
+     * Get email limit from product features.
+     */
+    protected function emailLimit(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $feature = $this->product?->features()
+                    ->where('feature_key', 'email_accounts')
+                    ->first();
+
+                if (!$feature) return $this->attributes['email_limit'] ?? null;
+
+                if ($feature->feature_value === 'unlimited') return null;
+
+                return (int) $feature->feature_value;
+            },
+        );
+    }
+
+    /**
+     * Get database limit from product features.
+     */
+    protected function databaseLimit(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $feature = $this->product?->features()
+                    ->where('feature_key', 'mysql_databases')
+                    ->first();
+
+                if (!$feature) return $this->attributes['database_limit'] ?? null;
+
+                if ($feature->feature_value === 'unlimited') return null;
+
+                return (int) $feature->feature_value;
+            },
+        );
+    }
+
+    /**
+     * Get subdomain limit from product features.
+     */
+    protected function subdomainLimit(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $feature = $this->product?->features()
+                    ->where('feature_key', 'websites_included')
+                    ->first();
+
+                if (!$feature) return $this->attributes['subdomain_limit'] ?? null;
+
+                if ($feature->feature_value === 'unlimited') return null;
+
+                return (int) $feature->feature_value;
+            },
+        );
     }
 
     /**
@@ -297,6 +451,67 @@ class HostingAccount extends Model
     }
 
     /**
+     * Validate if account can create more email accounts.
+     */
+    public function canCreateEmailAccount(): bool
+    {
+        $limit = $this->email_limit;
+        return $limit === null || $this->email_accounts < $limit;
+    }
+
+    /**
+     * Validate if account can create more databases.
+     */
+    public function canCreateDatabase(): bool
+    {
+        $limit = $this->database_limit;
+        return $limit === null || $this->databases < $limit;
+    }
+
+    /**
+     * Validate if account can create more subdomains.
+     */
+    public function canCreateSubdomain(): bool
+    {
+        $limit = $this->subdomain_limit;
+        return $limit === null || $this->subdomains < $limit;
+    }
+
+    /**
+     * Check if account is exceeding any product limits.
+     */
+    public function isExceedingLimits(): array
+    {
+        $violations = [];
+
+        // Check disk limit
+        $diskLimit = $this->disk_limit_mb;
+        if ($diskLimit && $this->disk_usage_mb > $diskLimit) {
+            $violations[] = 'disk_space';
+        }
+
+        // Check email limit
+        $emailLimit = $this->email_limit;
+        if ($emailLimit && $this->email_accounts > $emailLimit) {
+            $violations[] = 'email_accounts';
+        }
+
+        // Check database limit
+        $databaseLimit = $this->database_limit;
+        if ($databaseLimit && $this->databases > $databaseLimit) {
+            $violations[] = 'databases';
+        }
+
+        // Check subdomain limit
+        $subdomainLimit = $this->subdomain_limit;
+        if ($subdomainLimit && $this->subdomains > $subdomainLimit) {
+            $violations[] = 'subdomains';
+        }
+
+        return $violations;
+    }
+
+    /**
      * Format bytes into human readable format.
      */
     private function formatBytes($bytes, $precision = 2): string
@@ -320,5 +535,23 @@ class HostingAccount extends Model
         } while (self::where('account_number', $number)->exists());
 
         return $number;
+    }
+
+    /**
+     * Find an available server for a product.
+     */
+    public static function findAvailableServer($productId): ?Server
+    {
+        $product = Product::find($productId);
+        if (!$product || !$product->server_group_id) {
+            return null;
+        }
+
+        // Find servers in the product's server group with available capacity
+        return Server::where('server_group_id', $product->server_group_id)
+            ->where('status', 'active')
+            ->available() // Uses the scope we defined
+            ->orderBy('current_accounts', 'asc') // Prefer servers with fewer accounts
+            ->first();
     }
 }

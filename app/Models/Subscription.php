@@ -127,6 +127,26 @@ class Subscription extends Model
     }
 
     /**
+     * Get the hosting accounts for this subscription.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function hostingAccounts(): HasMany
+    {
+        return $this->hasMany(HostingAccount::class);
+    }
+
+    /**
+     * Get the domain registrations for this subscription.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function domainRegistrations(): HasMany
+    {
+        return $this->hasMany(DomainRegistration::class);
+    }
+
+    /**
      * Get the subscription's display name.
      */
     protected function displayName(): Attribute

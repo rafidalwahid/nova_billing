@@ -91,7 +91,7 @@ class DomainRegistration extends Resource
                 ->sortable()
                 ->rules('required'),
 
-            Badge::make('Status')->map([
+            Badge::make('Status', 'computed_status')->map([
                 'pending' => 'warning',
                 'active' => 'success',
                 'expired' => 'danger',
@@ -115,17 +115,32 @@ class DomainRegistration extends Resource
                 ->sortable()
                 ->nullable(),
 
+            Text::make('Expiration Status', 'expiration_status_text')
+                ->sortable()
+                ->displayUsing(function ($value) {
+                    if (!$this->expiration_date) return 'N/A';
+
+                    $days = $this->days_until_expiration;
+
+                    if ($days < 0) {
+                        return "🔴 " . $value;
+                    }
+
+                    if ($days <= 7) {
+                        return "🔴 " . $value;
+                    }
+
+                    if ($days <= 30) {
+                        return "🟡 " . $value;
+                    }
+
+                    return "🟢 " . $value;
+                }),
+
             Date::make('Expiration Date')
                 ->sortable()
                 ->nullable()
-                ->displayUsing(function ($value) {
-                    if (!$value) return 'N/A';
-                    $days = $value->diffInDays(now(), false);
-                    if ($days < 0) return "🔴 Expired " . abs($days) . " days ago";
-                    if ($days <= 7) return "🔴 Expires in {$days} days";
-                    if ($days <= 30) return "🟡 Expires in {$days} days";
-                    return "🟢 Expires in {$days} days";
-                }),
+                ->onlyOnDetail(),
         ];
     }
 

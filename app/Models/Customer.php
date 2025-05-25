@@ -118,5 +118,25 @@ class Customer extends Model
         return $this->hasMany(Subscription::class);
     }
 
+    /**
+     * Get the hosting accounts for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function hostingAccounts(): HasMany
+    {
+        return $this->hasMany(HostingAccount::class);
+    }
+
+    /**
+     * Get the domain registrations for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function domainRegistrations(): HasMany
+    {
+        return $this->hasMany(DomainRegistration::class);
+    }
+
     // Ticket relationship removed - will be implemented later
 }

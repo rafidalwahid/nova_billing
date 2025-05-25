@@ -72,6 +72,26 @@ class Product extends Model
     }
 
     /**
+     * Get the hosting accounts for this product.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function hostingAccounts(): HasMany
+    {
+        return $this->hasMany(HostingAccount::class);
+    }
+
+    /**
+     * Get the domain registrations for this product.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function domainRegistrations(): HasMany
+    {
+        return $this->hasMany(DomainRegistration::class);
+    }
+
+    /**
      * Get the product's display name with type.
      */
     protected function displayName(): Attribute

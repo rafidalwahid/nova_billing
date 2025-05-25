@@ -103,6 +103,26 @@ class Order extends Model
     }
 
     /**
+     * Get the hosting accounts created from this order.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function hostingAccounts(): HasMany
+    {
+        return $this->hasMany(HostingAccount::class);
+    }
+
+    /**
+     * Get the domain registrations created from this order.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function domainRegistrations(): HasMany
+    {
+        return $this->hasMany(DomainRegistration::class);
+    }
+
+    /**
      * Get the formatted order number.
      */
     protected function formattedOrderNumber(): Attribute

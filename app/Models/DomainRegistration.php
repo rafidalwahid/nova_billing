@@ -10,6 +10,42 @@ use Carbon\Carbon;
 class DomainRegistration extends Model
 {
     /**
+     * Boot the model and register event listeners.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validate and auto-calculate dates before creating
+        static::creating(function ($domain) {
+            // Prevent future registration dates
+            if ($domain->registration_date && Carbon::parse($domain->registration_date)->isFuture()) {
+                throw new \InvalidArgumentException('Registration date cannot be in the future');
+            }
+
+            // Auto-calculate expiration if not set
+            if (!$domain->expiration_date && $domain->registration_date && $domain->registration_period) {
+                $domain->expiration_date = Carbon::parse($domain->registration_date)
+                    ->addYears($domain->registration_period);
+            }
+
+            // Set default registration date if not provided
+            if (!$domain->registration_date) {
+                $domain->registration_date = Carbon::now();
+            }
+        });
+
+        // Validate dates before updating
+        static::updating(function ($domain) {
+            if ($domain->isDirty('registration_date') &&
+                $domain->registration_date &&
+                Carbon::parse($domain->registration_date)->isFuture()) {
+                throw new \InvalidArgumentException('Registration date cannot be in the future');
+            }
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array
@@ -121,12 +157,59 @@ class DomainRegistration extends Model
     }
 
     /**
-     * Get the domain's display name with TLD and status.
+     * Get the computed status based on real-time conditions.
+     */
+    protected function computedStatus(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                // Real-time status based on dates and conditions
+                if ($this->expiration_date && $this->expiration_date->isPast()) {
+                    return 'expired';
+                }
+
+                if ($this->suspended_at) {
+                    return 'suspended';
+                }
+
+                if ($this->status === 'cancelled') {
+                    return 'cancelled';
+                }
+
+                if ($this->transfer_requested_at && $this->transfer_status === 'pending') {
+                    return 'pending';
+                }
+
+                return $this->status === 'pending' ? 'pending' : 'active';
+            },
+        );
+    }
+
+    /**
+     * Get the domain's display name with TLD and computed status.
      */
     protected function displayName(): Attribute
     {
         return Attribute::make(
-            get: fn () => "{$this->domain_name} ({$this->status_display})",
+            get: fn () => "{$this->domain_name} ({$this->computed_status_display})",
+        );
+    }
+
+    /**
+     * Get the computed status display name.
+     */
+    protected function computedStatusDisplay(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => match($this->computed_status) {
+                'pending' => 'Pending Registration',
+                'active' => 'Active',
+                'expired' => 'Expired',
+                'suspended' => 'Suspended',
+                'cancelled' => 'Cancelled',
+                'transferred' => 'Transferred Out',
+                default => ucfirst($this->computed_status),
+            },
         );
     }
 
@@ -176,14 +259,43 @@ class DomainRegistration extends Model
     }
 
     /**
-     * Get the days until expiration.
+     * Get the days until expiration (negative if expired).
      */
     protected function daysUntilExpiration(): Attribute
     {
         return Attribute::make(
             get: fn () => $this->expiration_date
-                ? $this->expiration_date->diffInDays(Carbon::now(), false)
+                ? (int) Carbon::now()->diffInDays($this->expiration_date, false)
                 : null,
+        );
+    }
+
+    /**
+     * Get human-readable expiration status.
+     */
+    protected function expirationStatusText(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (!$this->expiration_date) return 'No expiration date';
+
+                $days = (int) $this->days_until_expiration;
+
+                if ($days < 0) {
+                    $absDays = abs($days);
+                    return 'Expired ' . $absDays . ' day' . ($absDays !== 1 ? 's' : '') . ' ago';
+                }
+
+                if ($days == 0) {
+                    return 'Expires today';
+                }
+
+                if ($days <= 30) {
+                    return 'Expires in ' . $days . ' day' . ($days !== 1 ? 's' : '');
+                }
+
+                return 'Expires ' . $this->expiration_date->format('M j, Y');
+            },
         );
     }
 
@@ -196,7 +308,7 @@ class DomainRegistration extends Model
             get: function () {
                 if (!$this->expiration_date) return 'unknown';
 
-                $days = $this->days_until_expiration;
+                $days = (int) $this->days_until_expiration;
 
                 if ($days < 0) return 'expired';
                 if ($days <= 7) return 'critical';
