@@ -28,5 +28,13 @@ class Department extends Model
         return $this->hasMany(AdminUser::class);
     }
 
-    // Ticket relationship removed - will be implemented later
+    /**
+     * Get the tickets assigned to this department.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
 }

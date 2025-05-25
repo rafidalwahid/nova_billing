@@ -40,6 +40,8 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\Transaction::class,
             \App\Nova\Subscription::class,
             \App\Nova\SubscriptionItem::class,
+            \App\Nova\Ticket::class,
+            \App\Nova\TicketResponse::class,
         ]);
 
         // Configure custom navigation
@@ -83,6 +85,11 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Permission::class),
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Department::class),
                 ])->icon('user-group')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Support Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Ticket::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\TicketResponse::class),
+                ])->icon('support')->collapsible(),
             ];
         });
     }

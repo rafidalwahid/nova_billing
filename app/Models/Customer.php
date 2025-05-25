@@ -59,6 +59,16 @@ class Customer extends Model
     }
 
     /**
+     * Get the tickets for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    /**
      * Get the orders for the customer.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany

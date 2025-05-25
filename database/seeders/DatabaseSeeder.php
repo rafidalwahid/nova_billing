@@ -23,7 +23,11 @@ class DatabaseSeeder extends Seeder
             ServerGroupSeeder::class, // Add server groups before products
             ProductSeeder::class,
             ProductFeatureSeeder::class,
+            OrderSeeder::class, // Add orders before invoices
             InvoiceSeeder::class,
+            PaymentSeeder::class, // Add payments after invoices
+            SubscriptionSeeder::class, // Add subscriptions after orders
+            TicketSeeder::class, // Add support tickets
         ]);
     }
 }

@@ -155,7 +155,9 @@ class Customer extends Resource
 
             DateTime::make('Last Login')
                 ->hideWhenCreating()
-                ->hideWhenUpdating(),            // Relationships will be implemented later
+                ->hideWhenUpdating(),
+
+            HasMany::make('Support Tickets', 'tickets', Ticket::class),
         ];
     }
 

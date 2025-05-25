@@ -65,7 +65,7 @@ class Department extends Resource
 
             HasMany::make('Staff', 'staff', AdminUser::class),
 
-            // Tickets relationship will be implemented later
+            HasMany::make('Support Tickets', 'tickets', Ticket::class),
         ];
     }
 

@@ -7,6 +7,7 @@ use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Fields\Password;
 use Laravel\Nova\Fields\BelongsTo;
+use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -122,6 +123,10 @@ class AdminUser extends Resource
             DateTime::make('Last Login')
                 ->hideWhenCreating()
                 ->hideWhenUpdating(),
+
+            HasMany::make('Assigned Tickets', 'assignedTickets', Ticket::class),
+
+            HasMany::make('Ticket Responses', 'ticketResponses', TicketResponse::class),
         ];
     }
 
