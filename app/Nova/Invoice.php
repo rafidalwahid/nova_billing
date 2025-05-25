@@ -221,6 +221,8 @@ class Invoice extends Resource
                 ->nullable(),
 
             HasMany::make('Invoice Lines', 'lines', InvoiceLine::class),
+
+            HasMany::make('Payments'),
         ];
     }
 

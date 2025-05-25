@@ -15,6 +15,9 @@ use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\PaymentMethod;
+use App\Models\Transaction;
 
 class RecordPayment extends Action
 {
@@ -35,29 +38,59 @@ class RecordPayment extends Action
      */
     public function handle(ActionFields $fields, Collection $models)
     {
+        $paymentsCreated = 0;
+
         foreach ($models as $invoice) {
             if ($invoice instanceof Invoice) {
                 $paymentAmount = $fields->payment_amount;
                 $newBalanceDue = max(0, $invoice->balance_due - $paymentAmount);
 
+                // Find payment method by name (for backward compatibility)
+                $paymentMethod = null;
+                if ($fields->payment_method) {
+                    $paymentMethod = PaymentMethod::where('gateway', $fields->payment_method)
+                        ->orWhere('name', 'like', '%' . ucfirst(str_replace('_', ' ', $fields->payment_method)) . '%')
+                        ->first();
+                }
+
+                // Create Payment record
+                $payment = Payment::create([
+                    'invoice_id' => $invoice->id,
+                    'customer_id' => $invoice->customer_id,
+                    'payment_method_id' => $paymentMethod?->id,
+                    'amount' => $paymentAmount,
+                    'payment_date' => $fields->payment_date ?? now(),
+                    'status' => Payment::STATUS_COMPLETED,
+                    'reference_number' => 'MAN-' . strtoupper(uniqid()),
+                    'notes' => $fields->notes,
+                    'processed_at' => now(),
+                ]);
+
+                // Create Transaction record
+                Transaction::create([
+                    'payment_id' => $payment->id,
+                    'customer_id' => $invoice->customer_id,
+                    'type' => Transaction::TYPE_PAYMENT,
+                    'amount' => $paymentAmount,
+                    'currency' => 'USD',
+                    'status' => Transaction::STATUS_COMPLETED,
+                    'processed_at' => now(),
+                    'description' => "Payment for Invoice #{$invoice->formatted_invoice_number}",
+                    'notes' => $fields->notes,
+                ]);
+
+                // Update invoice
                 $invoice->update([
                     'balance_due' => $newBalanceDue,
                     'status' => $newBalanceDue <= 0 ? Invoice::STATUS_PAID : $invoice->status,
                     'paid_date' => $newBalanceDue <= 0 ? ($fields->payment_date ?? now()) : $invoice->paid_date,
                 ]);
 
-                // Here you could also create a Payment record if you have a payments table
-                // Payment::create([
-                //     'invoice_id' => $invoice->id,
-                //     'amount' => $paymentAmount,
-                //     'payment_date' => $fields->payment_date,
-                //     'payment_method' => $fields->payment_method,
-                //     'notes' => $fields->notes,
-                // ]);
+                $paymentsCreated++;
             }
         }
 
-        return Action::message('Payment(s) recorded successfully!');
+        return Action::message("Successfully recorded {$paymentsCreated} payment(s) and created transaction records!");
     }
 
     /**

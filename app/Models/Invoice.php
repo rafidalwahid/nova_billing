@@ -84,6 +84,16 @@ class Invoice extends Model
     }
 
     /**
+     * Get the payments for the invoice.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
      * Get the formatted invoice number.
      */
     protected function formattedInvoiceNumber(): Attribute

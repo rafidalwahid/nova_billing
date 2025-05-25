@@ -9,17 +9,16 @@ use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\HasMany;
-use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
-class Product extends Resource
+class ServerGroup extends Resource
 {
     /**
      * The model the resource corresponds to.
      *
-     * @var class-string<\App\Models\Product>
+     * @var class-string<\App\Models\ServerGroup>
      */
-    public static $model = \App\Models\Product::class;
+    public static $model = \App\Models\ServerGroup::class;
 
     /**
      * The single value that should be used to represent the resource when being displayed.
@@ -58,7 +57,7 @@ class Product extends Resource
                 ->sortable()
                 ->rules('required', 'max:255')
                 ->displayUsing(function ($name) {
-                    return $name . ' (' . ucfirst($this->type) . ')';
+                    return $name . ' (' . $this->fill_method_display . ')';
                 })
                 ->onlyOnIndex(),
 
@@ -67,21 +66,22 @@ class Product extends Resource
                 ->rules('required', 'max:255')
                 ->hideFromIndex(),
 
-            Select::make('Type')
-                ->options([
-                    'hosting' => 'Hosting Package',
-                    'domain' => 'Domain Registration',
-                    'addon' => 'Addon Service',
-                ])
-                ->displayUsingLabels()
-                ->sortable()
-                ->rules('required', 'in:hosting,domain,addon')
-                ->filterable(),
-
             Textarea::make('Description')
                 ->rules('nullable', 'max:1000')
                 ->hideFromIndex()
                 ->alwaysShow(),
+
+            Select::make('Fill Method')
+                ->options([
+                    'round_robin' => 'Round Robin',
+                    'least_used' => 'Least Used',
+                    'manual' => 'Manual Assignment',
+                ])
+                ->displayUsingLabels()
+                ->sortable()
+                ->rules('required', 'in:round_robin,least_used,manual')
+                ->filterable()
+                ->help('How servers in this group should be selected for new hosting accounts'),
 
             Badge::make('Status', 'is_active')
                 ->map([
@@ -95,43 +95,13 @@ class Product extends Resource
                 ->sortable()
                 ->filterable(),
 
-            BelongsTo::make('Server Group')
-                ->sortable()
-                ->nullable()
-                ->searchable()
-                ->showCreateRelationButton()
-                ->help('Assign hosting products to server groups for automated provisioning')
-                ->hideFromIndex(function ($request) {
-                    return $this->type !== 'hosting';
-                })
-                ->hideWhenCreating(function ($request) {
-                    return $request->get('type') !== 'hosting';
-                })
-                ->hideWhenUpdating(function ($request) {
-                    return $this->type !== 'hosting';
-                }),
-
-            Text::make('Pricing Summary', function () {
-                $pricingCount = $this->pricing()->count();
-                if ($pricingCount === 0) {
-                    return 'No pricing configured';
-                }
-
-                $minPrice = $this->pricing()->min('recurring_fee');
-                $maxPrice = $this->pricing()->max('recurring_fee');
-
-                if ($minPrice === $maxPrice) {
-                    return '$' . number_format($minPrice, 2);
-                }
-
-                return '$' . number_format($minPrice, 2) . ' - $' . number_format($maxPrice, 2);
+            Text::make('Products Count', function () {
+                return $this->products()->count() . ' products assigned';
             })
                 ->onlyOnIndex()
-                ->asHtml(),
+                ->sortable(false),
 
-            HasMany::make('Pricing', 'pricing', ProductPricing::class),
-
-            HasMany::make('Features', 'features', ProductFeature::class),
+            HasMany::make('Products'),
         ];
     }
 
@@ -152,9 +122,7 @@ class Product extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [
-            new \App\Nova\Filters\ProductTypeFilter,
-        ];
+        return [];
     }
 
     /**
@@ -174,8 +142,6 @@ class Product extends Resource
      */
     public function actions(NovaRequest $request): array
     {
-        return [
-            new Actions\AssignToServerGroup,
-        ];
+        return [];
     }
 }

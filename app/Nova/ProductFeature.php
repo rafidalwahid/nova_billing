@@ -76,7 +76,10 @@ class ProductFeature extends Resource
                 ->sortable()
                 ->searchable()
                 ->showCreateRelationButton()
-                ->display('name'),
+                ->display(function ($product) {
+                    $serverGroup = $product->serverGroup ? ' [' . $product->serverGroup->name . ']' : '';
+                    return $product->name . $serverGroup;
+                }),
 
             Select::make('Feature Type', 'feature_type')
                 ->options([
@@ -121,6 +124,14 @@ class ProductFeature extends Resource
             Boolean::make('Highlighted', 'is_highlighted')
                 ->help('Show this feature prominently in the UI')
                 ->sortable(),
+
+            Text::make('Server Group', function () {
+                return $this->product && $this->product->serverGroup
+                    ? $this->product->serverGroup->name
+                    : 'No server group assigned';
+            })
+                ->onlyOnDetail()
+                ->help('Server group assigned to this product (for hosting products only)'),
 
             Text::make('Formatted Value', 'formatted_value')
                 ->onlyOnIndex()

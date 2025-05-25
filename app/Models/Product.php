@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Product extends Model
@@ -18,6 +19,7 @@ class Product extends Model
         'type',
         'description',
         'is_active',
+        'server_group_id',
     ];
 
     /**
@@ -47,6 +49,16 @@ class Product extends Model
     public function features(): HasMany
     {
         return $this->hasMany(ProductFeature::class);
+    }
+
+    /**
+     * Get the server group this product is assigned to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function serverGroup(): BelongsTo
+    {
+        return $this->belongsTo(ServerGroup::class);
     }
 
     /**

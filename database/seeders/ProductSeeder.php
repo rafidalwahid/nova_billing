@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Product;
 use App\Models\ProductPricing;
+use App\Models\ServerGroup;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -35,10 +36,17 @@ class ProductSeeder extends Seeder
      */
     private function createHostingPackages(): void
     {
+        // Get server groups for assignment
+        $sharedEast = ServerGroup::where('name', 'Shared Hosting - US East')->first();
+        $sharedWest = ServerGroup::where('name', 'Shared Hosting - US West')->first();
+        $vpsPremium = ServerGroup::where('name', 'VPS Hosting - Premium')->first();
+        $dedicatedEnterprise = ServerGroup::where('name', 'Dedicated Servers - Enterprise')->first();
+
         $hostingPackages = [
             [
                 'name' => 'Starter Web Hosting',
                 'description' => 'Perfect for personal websites and small blogs. Includes 10GB SSD storage, unlimited bandwidth, 1 website, free SSL certificate, and 24/7 support.',
+                'server_group_id' => $sharedEast?->id,
                 'pricing' => [
                     'monthly' => ['setup' => 0.00, 'recurring' => 4.99],
                     'quarterly' => ['setup' => 0.00, 'recurring' => 12.99],
@@ -48,6 +56,7 @@ class ProductSeeder extends Seeder
             [
                 'name' => 'Professional Web Hosting',
                 'description' => 'Ideal for growing businesses and professional websites. Includes 50GB SSD storage, unlimited bandwidth, 10 websites, free SSL, daily backups, and priority support.',
+                'server_group_id' => $sharedWest?->id,
                 'pricing' => [
                     'monthly' => ['setup' => 0.00, 'recurring' => 9.99],
                     'quarterly' => ['setup' => 0.00, 'recurring' => 26.99],
@@ -58,6 +67,7 @@ class ProductSeeder extends Seeder
             [
                 'name' => 'Business Web Hosting',
                 'description' => 'Advanced hosting for high-traffic websites and e-commerce. Includes 200GB SSD storage, unlimited bandwidth, unlimited websites, free SSL, daily backups, staging environment, and dedicated support.',
+                'server_group_id' => $sharedEast?->id,
                 'pricing' => [
                     'monthly' => ['setup' => 0.00, 'recurring' => 19.99],
                     'quarterly' => ['setup' => 0.00, 'recurring' => 54.99],
@@ -68,6 +78,7 @@ class ProductSeeder extends Seeder
             [
                 'name' => 'Enterprise Web Hosting',
                 'description' => 'Premium hosting solution for large enterprises. Includes 500GB SSD storage, unlimited bandwidth, unlimited websites, free SSL, hourly backups, staging environment, CDN, and white-glove support.',
+                'server_group_id' => $sharedWest?->id,
                 'pricing' => [
                     'monthly' => ['setup' => 49.99, 'recurring' => 39.99],
                     'quarterly' => ['setup' => 49.99, 'recurring' => 109.99],
@@ -78,6 +89,7 @@ class ProductSeeder extends Seeder
             [
                 'name' => 'VPS Starter',
                 'description' => 'Virtual Private Server for developers and small applications. Includes 2 CPU cores, 4GB RAM, 80GB SSD storage, 2TB bandwidth, full root access, and managed updates.',
+                'server_group_id' => $vpsPremium?->id,
                 'pricing' => [
                     'monthly' => ['setup' => 25.00, 'recurring' => 29.99],
                     'quarterly' => ['setup' => 25.00, 'recurring' => 79.99],
@@ -88,6 +100,7 @@ class ProductSeeder extends Seeder
             [
                 'name' => 'VPS Professional',
                 'description' => 'High-performance VPS for growing applications. Includes 4 CPU cores, 8GB RAM, 160GB SSD storage, 4TB bandwidth, full root access, managed updates, and priority support.',
+                'server_group_id' => $vpsPremium?->id,
                 'pricing' => [
                     'monthly' => ['setup' => 25.00, 'recurring' => 59.99],
                     'quarterly' => ['setup' => 25.00, 'recurring' => 164.99],
@@ -98,6 +111,7 @@ class ProductSeeder extends Seeder
             [
                 'name' => 'Dedicated Server - Intel Xeon',
                 'description' => 'Powerful dedicated server for mission-critical applications. Includes Intel Xeon E-2236 processor, 32GB DDR4 RAM, 1TB NVMe SSD, 10TB bandwidth, full server management, and 24/7 monitoring.',
+                'server_group_id' => $dedicatedEnterprise?->id,
                 'pricing' => [
                     'monthly' => ['setup' => 99.99, 'recurring' => 199.99],
                     'quarterly' => ['setup' => 99.99, 'recurring' => 549.99],
@@ -113,6 +127,7 @@ class ProductSeeder extends Seeder
                 'type' => 'hosting',
                 'description' => $packageData['description'],
                 'is_active' => true,
+                'server_group_id' => $packageData['server_group_id'] ?? null,
             ]);
 
             foreach ($packageData['pricing'] as $cycle => $pricing) {

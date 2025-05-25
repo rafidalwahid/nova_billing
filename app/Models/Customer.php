@@ -78,6 +78,26 @@ class Customer extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    /**
+     * Get the payments for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Get the transactions for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
     // Subscription relationship removed - will be implemented later
 
     // Ticket relationship removed - will be implemented later

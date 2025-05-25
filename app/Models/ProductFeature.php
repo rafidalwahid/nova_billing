@@ -111,6 +111,27 @@ class ProductFeature extends Model
     }
 
     /**
+     * Get the server group this feature's product belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo|null
+     */
+    public function serverGroup()
+    {
+        return $this->product?->serverGroup();
+    }
+
+    /**
+     * Check if this feature is compatible with the product's server group.
+     * This is a placeholder for future server group validation logic.
+     */
+    public function isCompatibleWithServerGroup(): bool
+    {
+        // For now, return true. In the future, this could validate
+        // feature values against server group capabilities
+        return true;
+    }
+
+    /**
      * Scope a query to order features by display order.
      */
     public function scopeOrdered($query)

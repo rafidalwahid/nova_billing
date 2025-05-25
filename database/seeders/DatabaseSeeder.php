@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             AdminUserSeeder::class,
             CustomerSeeder::class,
+            ServerGroupSeeder::class, // Add server groups before products
             ProductSeeder::class,
             ProductFeatureSeeder::class,
             InvoiceSeeder::class,

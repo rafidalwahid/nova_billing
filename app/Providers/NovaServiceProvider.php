@@ -30,10 +30,14 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\Product::class,
             \App\Nova\ProductPricing::class,
             \App\Nova\ProductFeature::class,
+            \App\Nova\ServerGroup::class,
             \App\Nova\Order::class,
             \App\Nova\OrderItem::class,
             \App\Nova\Invoice::class,
             \App\Nova\InvoiceLine::class,
+            \App\Nova\Payment::class,
+            \App\Nova\PaymentMethod::class,
+            \App\Nova\Transaction::class,
         ]);
 
         // Configure custom navigation
@@ -49,6 +53,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 \Laravel\Nova\Menu\MenuSection::make('Product Catalog', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Product::class),
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\ProductFeature::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\ServerGroup::class),
                 ])->icon('cube')->collapsible(),
 
                 \Laravel\Nova\Menu\MenuSection::make('Order Management', [
@@ -59,6 +64,12 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Invoice::class),
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\InvoiceLine::class),
                 ])->icon('document-text')->collapsible(),
+
+                \Laravel\Nova\Menu\MenuSection::make('Payment Management', [
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Payment::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\PaymentMethod::class),
+                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Transaction::class),
+                ])->icon('credit-card')->collapsible(),
 
                 \Laravel\Nova\Menu\MenuSection::make('Staff Management', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\AdminUser::class),
