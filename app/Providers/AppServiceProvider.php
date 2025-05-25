@@ -3,6 +3,11 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Event;
+use App\Events\DomainStatusChanged;
+use App\Events\SubscriptionStatusChanged;
+use App\Listeners\SyncSubscriptionOnDomainChange;
+use App\Listeners\CascadeSubscriptionStatusToServices;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +24,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register event listeners
+        Event::listen(
+            DomainStatusChanged::class,
+            SyncSubscriptionOnDomainChange::class,
+        );
+
+        Event::listen(
+            SubscriptionStatusChanged::class,
+            CascadeSubscriptionStatusToServices::class,
+        );
     }
 }

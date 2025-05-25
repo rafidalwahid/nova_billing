@@ -43,6 +43,16 @@ class DomainRegistration extends Model
                 throw new \InvalidArgumentException('Registration date cannot be in the future');
             }
         });
+
+        // Fire event when status changes
+        static::updated(function ($domain) {
+            if ($domain->isDirty('status')) {
+                $oldStatus = $domain->getOriginal('status');
+                $newStatus = $domain->status;
+
+                \App\Events\DomainStatusChanged::dispatch($domain, $oldStatus, $newStatus);
+            }
+        });
     }
 
     /**
@@ -55,6 +65,7 @@ class DomainRegistration extends Model
         'product_id',
         'subscription_id',
         'order_id',
+        'hosting_account_id',
         'domain_name',
         'tld',
         'registrar',
@@ -154,6 +165,16 @@ class DomainRegistration extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Get the hosting account for this domain registration.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function hostingAccount(): BelongsTo
+    {
+        return $this->belongsTo(HostingAccount::class);
     }
 
     /**

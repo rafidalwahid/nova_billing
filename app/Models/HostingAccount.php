@@ -71,6 +71,7 @@ class HostingAccount extends Model
         'product_id',
         'subscription_id',
         'order_id',
+        'domain_registration_id',
         'account_number',
         'username',
         'domain',
@@ -178,6 +179,16 @@ class HostingAccount extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Get the domain registration for this hosting account.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function domainRegistration(): BelongsTo
+    {
+        return $this->belongsTo(DomainRegistration::class);
     }
 
     /**

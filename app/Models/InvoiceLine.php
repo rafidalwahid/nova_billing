@@ -109,14 +109,6 @@ class InvoiceLine extends Model
     }
 
     /**
-     * Scope a query to only include specific line types.
-     */
-    public function scopeOfType($query, $type)
-    {
-        return $query->where('type', $type);
-    }
-
-    /**
      * Scope a query to only include product lines.
      */
     public function scopeProducts($query)

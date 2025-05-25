@@ -18,6 +18,24 @@ class Subscription extends Model
     const STATUS_EXPIRED = 'expired';
 
     /**
+     * Boot the model and register event listeners.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Fire event when status changes
+        static::updated(function ($subscription) {
+            if ($subscription->isDirty('status')) {
+                $oldStatus = $subscription->getOriginal('status');
+                $newStatus = $subscription->status;
+
+                \App\Events\SubscriptionStatusChanged::dispatch($subscription, $oldStatus, $newStatus);
+            }
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array
@@ -157,26 +175,6 @@ class Subscription extends Model
     }
 
     /**
-     * Get the subscription's status badge HTML.
-     */
-    protected function statusBadge(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                $badges = [
-                    'pending' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">⏳ Pending</span>',
-                    'active' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">✅ Active</span>',
-                    'suspended' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">⏸️ Suspended</span>',
-                    'cancelled' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">❌ Cancelled</span>',
-                    'expired' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">⏰ Expired</span>',
-                ];
-
-                return $badges[$this->status] ?? $badges['pending'];
-            },
-        );
-    }
-
-    /**
      * Get the billing cycle display name.
      */
     protected function billingCycleDisplay(): Attribute
@@ -257,21 +255,5 @@ class Subscription extends Model
     {
         return $query->where('status', self::STATUS_ACTIVE)
                     ->whereDate('next_billing_date', '<=', Carbon::today());
-    }
-
-    /**
-     * Scope a query to only include subscriptions for a specific customer.
-     */
-    public function scopeForCustomer($query, $customerId)
-    {
-        return $query->where('customer_id', $customerId);
-    }
-
-    /**
-     * Scope a query to only include subscriptions for a specific product.
-     */
-    public function scopeForProduct($query, $productId)
-    {
-        return $query->where('product_id', $productId);
     }
 }

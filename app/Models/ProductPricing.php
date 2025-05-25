@@ -76,12 +76,4 @@ class ProductPricing extends Model
             get: fn () => $this->setup_fee + $this->recurring_fee,
         );
     }
-
-    /**
-     * Scope a query to only include specific billing cycles.
-     */
-    public function scopeForBillingCycle($query, $cycle)
-    {
-        return $query->where('billing_cycle', $cycle);
-    }
 }
