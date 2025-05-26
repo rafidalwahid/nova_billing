@@ -53,7 +53,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                 \Laravel\Nova\Menu\MenuSection::dashboard(\App\Nova\Dashboards\Main::class)->icon('chart-bar'),
 
                 \Laravel\Nova\Menu\MenuSection::make('Customer Management', [
-                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\User::class),
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Customer::class),
                 ])->icon('users')->collapsible(),
 

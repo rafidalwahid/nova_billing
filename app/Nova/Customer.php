@@ -220,6 +220,46 @@ class Customer extends Resource
     }
 
     /**
+     * Determine if the current user can view any resources.
+     */
+    public static function authorizedToViewAny(Request $request): bool
+    {
+        return $request->user()->can('viewAny', \App\Models\Customer::class);
+    }
+
+    /**
+     * Determine if the current user can view the resource.
+     */
+    public function authorizedToView(Request $request): bool
+    {
+        return $request->user()->can('view', $this->resource);
+    }
+
+    /**
+     * Determine if the current user can create new resources.
+     */
+    public static function authorizedToCreate(Request $request): bool
+    {
+        return $request->user()->can('create', \App\Models\Customer::class);
+    }
+
+    /**
+     * Determine if the current user can update the resource.
+     */
+    public function authorizedToUpdate(Request $request): bool
+    {
+        return $request->user()->can('update', $this->resource);
+    }
+
+    /**
+     * Determine if the current user can delete the resource.
+     */
+    public function authorizedToDelete(Request $request): bool
+    {
+        return $request->user()->can('delete', $this->resource);
+    }
+
+    /**
      * Handle resource creation.
      */
     public static function afterCreate(NovaRequest $request, $model)

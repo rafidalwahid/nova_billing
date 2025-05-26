@@ -13,7 +13,7 @@ class CustomerPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'customer_management.view');
+        return $this->hasPermission($user, 'view-customer-accounts');
     }
 
     /**
@@ -21,7 +21,7 @@ class CustomerPolicy
      */
     public function view(User $user, Customer $customer): bool
     {
-        return $this->hasPermission($user, 'customer_management.view');
+        return $this->hasPermission($user, 'view-customer-accounts');
     }
 
     /**
@@ -29,7 +29,7 @@ class CustomerPolicy
      */
     public function create(User $user): bool
     {
-        return $this->hasPermission($user, 'customer_management.create');
+        return $this->hasPermission($user, 'create-customer-accounts');
     }
 
     /**
@@ -37,7 +37,7 @@ class CustomerPolicy
      */
     public function update(User $user, Customer $customer): bool
     {
-        return $this->hasPermission($user, 'customer_management.update');
+        return $this->hasPermission($user, 'modify-customer-accounts');
     }
 
     /**
@@ -45,7 +45,7 @@ class CustomerPolicy
      */
     public function delete(User $user, Customer $customer): bool
     {
-        return $this->hasPermission($user, 'customer_management.delete');
+        return $this->hasPermission($user, 'deactivate-customer-accounts');
     }
 
     /**
@@ -53,7 +53,7 @@ class CustomerPolicy
      */
     public function restore(User $user, Customer $customer): bool
     {
-        return $this->hasPermission($user, 'customer_management.delete');
+        return $this->hasPermission($user, 'reactivate-customer-services');
     }
 
     /**
@@ -61,7 +61,7 @@ class CustomerPolicy
      */
     public function forceDelete(User $user, Customer $customer): bool
     {
-        return $this->hasPermission($user, 'customer_management.delete');
+        return $this->hasPermission($user, 'deactivate-customer-accounts');
     }
 
     /**
