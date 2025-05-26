@@ -85,7 +85,11 @@ class DomainRegistration extends Resource
 
             BelongsTo::make('Customer')
                 ->sortable()
-                ->rules('required'),
+                ->rules('required')
+                ->searchable()
+                ->display(function ($customer) {
+                    return $customer->first_name . ' ' . $customer->last_name;
+                }),
 
             BelongsTo::make('Product')
                 ->sortable()

@@ -61,7 +61,10 @@ class Subscription extends Resource
             BelongsTo::make('Customer')
                 ->sortable()
                 ->rules('required')
-                ->searchable(),
+                ->searchable()
+                ->display(function ($customer) {
+                    return $customer->first_name . ' ' . $customer->last_name;
+                }),
 
             BelongsTo::make('Order')
                 ->nullable()

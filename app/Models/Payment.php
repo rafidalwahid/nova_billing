@@ -18,6 +18,7 @@ class Payment extends Model
 
     /**
      * The attributes that are mass assignable.
+     * Restricted for security - sensitive fields like gateway_response should not be mass assignable
      *
      * @var array
      */
@@ -28,10 +29,18 @@ class Payment extends Model
         'amount',
         'payment_date',
         'status',
-        'gateway_transaction_id',
-        'gateway_response',
         'reference_number',
         'notes',
+    ];
+
+    /**
+     * The attributes that should be guarded from mass assignment.
+     *
+     * @var array
+     */
+    protected $guarded = [
+        'gateway_transaction_id',
+        'gateway_response',
         'processed_at',
     ];
 

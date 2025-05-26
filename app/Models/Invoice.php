@@ -40,6 +40,51 @@ class Invoice extends Model
     ];
 
     /**
+     * Boot the model and register event listeners.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validate business rules before saving
+        static::saving(function ($invoice) {
+            // Ensure no negative amounts
+            if ($invoice->subtotal < 0) {
+                throw new \InvalidArgumentException('Invoice subtotal cannot be negative');
+            }
+            if ($invoice->tax_amount < 0) {
+                throw new \InvalidArgumentException('Invoice tax amount cannot be negative');
+            }
+            if ($invoice->total < 0) {
+                throw new \InvalidArgumentException('Invoice total cannot be negative');
+            }
+            if ($invoice->balance_due < 0) {
+                throw new \InvalidArgumentException('Invoice balance due cannot be negative');
+            }
+
+            // Validate status transitions
+            if ($invoice->exists && $invoice->isDirty('status')) {
+                $oldStatus = $invoice->getOriginal('status');
+                $newStatus = $invoice->status;
+
+                if (!$invoice->isValidStatusTransition($oldStatus, $newStatus)) {
+                    throw new \InvalidArgumentException("Invalid status transition from {$oldStatus} to {$newStatus}");
+                }
+            }
+
+            // Set paid_date when status changes to paid
+            if ($invoice->status === self::STATUS_PAID && !$invoice->paid_date) {
+                $invoice->paid_date = now();
+            }
+
+            // Clear paid_date when status changes from paid
+            if ($invoice->status !== self::STATUS_PAID && $invoice->paid_date) {
+                $invoice->paid_date = null;
+            }
+        });
+    }
+
+    /**
      * The attributes that should be cast.
      *
      * @var array
@@ -203,5 +248,39 @@ class Invoice extends Model
     {
         return $query->where('status', '!=', self::STATUS_PAID)
                     ->where('status', '!=', self::STATUS_CANCELLED);
+    }
+
+    /**
+     * Validate status transitions.
+     */
+    public function isValidStatusTransition(string $oldStatus, string $newStatus): bool
+    {
+        $validTransitions = [
+            self::STATUS_DRAFT => [self::STATUS_SENT, self::STATUS_CANCELLED],
+            self::STATUS_SENT => [self::STATUS_PAID, self::STATUS_OVERDUE, self::STATUS_CANCELLED],
+            self::STATUS_PAID => [], // Paid invoices cannot change status
+            self::STATUS_OVERDUE => [self::STATUS_PAID, self::STATUS_CANCELLED],
+            self::STATUS_CANCELLED => [], // Cancelled invoices cannot change status
+        ];
+
+        return in_array($newStatus, $validTransitions[$oldStatus] ?? []);
+    }
+
+    /**
+     * Calculate balance due based on total payments.
+     */
+    public function calculateBalanceDue(): float
+    {
+        $totalPayments = $this->payments()->sum('amount');
+        return max(0, $this->total - $totalPayments);
+    }
+
+    /**
+     * Update balance due based on payments.
+     */
+    public function updateBalanceDue(): void
+    {
+        $this->balance_due = $this->calculateBalanceDue();
+        $this->save();
     }
 }

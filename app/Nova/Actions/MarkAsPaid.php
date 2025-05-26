@@ -32,17 +32,41 @@ class MarkAsPaid extends Action
      */
     public function handle(ActionFields $fields, Collection $models)
     {
+        $errors = [];
+        $successCount = 0;
+
         foreach ($models as $invoice) {
             if ($invoice instanceof Invoice) {
-                $invoice->update([
-                    'status' => Invoice::STATUS_PAID,
-                    'paid_date' => $fields->paid_date ?? now(),
-                    'balance_due' => 0.00,
-                ]);
+                // Validate that invoice is not already paid
+                if ($invoice->status === Invoice::STATUS_PAID) {
+                    $errors[] = "Invoice {$invoice->invoice_number} is already paid";
+                    continue;
+                }
+
+                // Validate that invoice is not cancelled
+                if ($invoice->status === Invoice::STATUS_CANCELLED) {
+                    $errors[] = "Invoice {$invoice->invoice_number} is cancelled and cannot be marked as paid";
+                    continue;
+                }
+
+                try {
+                    $invoice->update([
+                        'status' => Invoice::STATUS_PAID,
+                        'paid_date' => $fields->paid_date ?? now(),
+                        'balance_due' => 0.00,
+                    ]);
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to mark invoice {$invoice->invoice_number} as paid: " . $e->getMessage();
+                }
             }
         }
 
-        return Action::message('Invoice(s) marked as paid successfully!');
+        if (!empty($errors)) {
+            return Action::danger(implode('; ', $errors));
+        }
+
+        return Action::message("{$successCount} invoice(s) marked as paid successfully!");
     }
 
     /**

@@ -11,6 +11,8 @@ use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class AdminUser extends Resource
 {
@@ -61,7 +63,7 @@ class AdminUser extends Resource
      * @var array
      */
     public static $search = [
-        'id', 'first_name', 'last_name', 'email',
+        'id', 'first_name', 'last_name',
     ];
 
     /**
@@ -92,8 +94,11 @@ class AdminUser extends Resource
             Text::make('Email')
                 ->sortable()
                 ->rules('required', 'email', 'max:254')
-                ->displayUsing(function ($email) {
-                    return $this->user ? $this->user->email : $email;
+                ->displayUsing(function () {
+                    return $this->user ? $this->user->email : 'No email';
+                })
+                ->resolveUsing(function () {
+                    return $this->user ? $this->user->email : '';
                 }),
 
             Password::make('Password')
@@ -172,5 +177,52 @@ class AdminUser extends Resource
     public function actions(NovaRequest $request)
     {
         return [];
+    }
+
+    /**
+     * Handle resource creation.
+     */
+    public static function afterCreate(NovaRequest $request, $model)
+    {
+        // Create associated User record for polymorphic relationship
+        if ($request->has('password') && $request->password) {
+            $user = User::create([
+                'name' => $model->first_name . ' ' . $model->last_name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'userable_type' => get_class($model),
+                'userable_id' => $model->id,
+            ]);
+        }
+    }
+
+    /**
+     * Handle resource updates.
+     */
+    public static function afterUpdate(NovaRequest $request, $model)
+    {
+        // Update associated User record
+        if ($model->user) {
+            $updateData = [
+                'name' => $model->first_name . ' ' . $model->last_name,
+                'email' => $request->email,
+            ];
+
+            // Only update password if provided
+            if ($request->has('password') && $request->password) {
+                $updateData['password'] = Hash::make($request->password);
+            }
+
+            $model->user->update($updateData);
+        } elseif ($request->has('password') && $request->password) {
+            // Create User record if it doesn't exist and password is provided
+            User::create([
+                'name' => $model->first_name . ' ' . $model->last_name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'userable_type' => get_class($model),
+                'userable_id' => $model->id,
+            ]);
+        }
     }
 }

@@ -21,7 +21,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         // Register Nova resources
         Nova::resources([
-            \App\Nova\User::class,
+            // \App\Nova\User::class, // Hidden - managed through Customer/AdminUser
             \App\Nova\Customer::class,
             \App\Nova\AdminUser::class,
             \App\Nova\Role::class,

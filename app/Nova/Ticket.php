@@ -93,7 +93,10 @@ class Ticket extends Resource
             BelongsTo::make('Customer')
                 ->sortable()
                 ->searchable()
-                ->showCreateRelationButton(),
+                ->showCreateRelationButton()
+                ->display(function ($customer) {
+                    return $customer->first_name . ' ' . $customer->last_name;
+                }),
 
             Text::make('Subject')
                 ->sortable()

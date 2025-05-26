@@ -28,6 +28,33 @@ class Order extends Model
     ];
 
     /**
+     * Boot the model and register event listeners.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Calculate totals before saving
+        static::saving(function ($order) {
+            // Validate no negative amounts
+            if ($order->subtotal < 0) {
+                throw new \InvalidArgumentException('Order subtotal cannot be negative');
+            }
+            if ($order->tax_amount < 0) {
+                throw new \InvalidArgumentException('Order tax amount cannot be negative');
+            }
+            if ($order->total < 0) {
+                throw new \InvalidArgumentException('Order total cannot be negative');
+            }
+
+            // Auto-calculate total if not manually set
+            if ($order->isDirty(['subtotal', 'tax_amount']) && !$order->isDirty('total')) {
+                $order->total = $order->subtotal + $order->tax_amount;
+            }
+        });
+    }
+
+    /**
      * The attributes that should be cast.
      *
      * @var array
@@ -171,5 +198,40 @@ class Order extends Model
     public function scopePending($query)
     {
         return $query->where('status', self::STATUS_PENDING);
+    }
+
+    /**
+     * Calculate subtotal from order items.
+     */
+    public function calculateSubtotal(): float
+    {
+        return $this->items()->sum('total_price');
+    }
+
+    /**
+     * Calculate tax amount (simple 10% for now).
+     */
+    public function calculateTaxAmount(): float
+    {
+        return $this->calculateSubtotal() * 0.10; // 10% tax rate
+    }
+
+    /**
+     * Calculate total from subtotal and tax.
+     */
+    public function calculateTotal(): float
+    {
+        return $this->calculateSubtotal() + $this->calculateTaxAmount();
+    }
+
+    /**
+     * Update order totals from items.
+     */
+    public function updateTotalsFromItems(): void
+    {
+        $this->subtotal = $this->calculateSubtotal();
+        $this->tax_amount = $this->calculateTaxAmount();
+        $this->total = $this->calculateTotal();
+        $this->save();
     }
 }

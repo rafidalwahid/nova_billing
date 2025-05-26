@@ -88,7 +88,9 @@ class Order extends Resource
                 ->sortable()
                 ->searchable()
                 ->showCreateRelationButton()
-                ->display('full_name'),
+                ->display(function ($customer) {
+                    return $customer->first_name . ' ' . $customer->last_name;
+                }),
 
             Badge::make('Status')->map([
                 \App\Models\Order::STATUS_PENDING => 'warning',
