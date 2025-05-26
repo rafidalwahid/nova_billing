@@ -74,7 +74,7 @@ class Customer extends Resource
      */
     public static function indexQuery(NovaRequest $request, Builder $query): Builder
     {
-        return $query->with([
+        $query = $query->with([
             'user',
             'orders',
             'subscriptions',
@@ -85,6 +85,14 @@ class Customer extends Resource
             'transactions',
             'tickets'
         ]);
+
+        // If user is a customer, only show their own record
+        $user = $request->user();
+        if ($user && $user->isCustomer()) {
+            $query->where('id', $user->userable->id);
+        }
+
+        return $query;
     }
 
     /**
@@ -279,10 +287,23 @@ class Customer extends Resource
 
     /**
      * Determine if the current user can view any resources.
+     * Override base class to allow customers to view their own data and staff with permissions.
      */
     public static function authorizedToViewAny(Request $request): bool
     {
-        return $request->user()->can('viewAny', \App\Models\Customer::class);
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers can view customer resources (but will be filtered to their own data)
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
+        return $user->can('viewAny', \App\Models\Customer::class);
     }
 
     /**
@@ -290,7 +311,19 @@ class Customer extends Resource
      */
     public function authorizedToView(Request $request): bool
     {
-        return $request->user()->can('view', $this->resource);
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers can only view their own record
+        if ($user->isCustomer()) {
+            return $this->resource->id === $user->userable->id;
+        }
+
+        // Staff users need proper permissions
+        return $user->can('view', $this->resource);
     }
 
     /**
@@ -298,7 +331,19 @@ class Customer extends Resource
      */
     public static function authorizedToCreate(Request $request): bool
     {
-        return $request->user()->can('create', \App\Models\Customer::class);
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers cannot create customer records
+        if ($user->isCustomer()) {
+            return false;
+        }
+
+        // Staff users need proper permissions
+        return $user->can('create', \App\Models\Customer::class);
     }
 
     /**
@@ -306,7 +351,19 @@ class Customer extends Resource
      */
     public function authorizedToUpdate(Request $request): bool
     {
-        return $request->user()->can('update', $this->resource);
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers can only update their own record
+        if ($user->isCustomer()) {
+            return $this->resource->id === $user->userable->id;
+        }
+
+        // Staff users need proper permissions
+        return $user->can('update', $this->resource);
     }
 
     /**
@@ -314,7 +371,19 @@ class Customer extends Resource
      */
     public function authorizedToDelete(Request $request): bool
     {
-        return $request->user()->can('delete', $this->resource);
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers cannot delete customer records
+        if ($user->isCustomer()) {
+            return false;
+        }
+
+        // Staff users need proper permissions
+        return $user->can('delete', $this->resource);
     }
 
     /**

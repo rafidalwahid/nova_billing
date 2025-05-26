@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Laravel\Fortify\Features;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
+use Laravel\Nova\Events\ServingNova;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -18,6 +19,15 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     {
         parent::boot();
         Nova::withBreadcrumbs();
+
+        // Set initial path for customers to customer portal
+        Nova::initialPath(function (Request $request) {
+            $user = $request->user();
+            if ($user && $user->isCustomer()) {
+                return '/customer-portal/dashboard';
+            }
+            return '/dashboards/main';
+        });
 
         // Register Nova resources
         Nova::resources([
@@ -49,6 +59,17 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
         // Configure custom navigation
         Nova::mainMenu(function (Request $request) {
+            $user = $request->user();
+
+            // If user is a customer, show minimal menu
+            if ($user && $user->isCustomer()) {
+                return [
+                    // Customers see main dashboard but will use Customer Portal tool for functionality
+                    \Laravel\Nova\Menu\MenuSection::dashboard(\App\Nova\Dashboards\Main::class)->icon('chart-bar'),
+                ];
+            }
+
+            // Staff users see full admin menu
             return [
                 \Laravel\Nova\Menu\MenuSection::dashboard(\App\Nova\Dashboards\Main::class)->icon('chart-bar'),
 
@@ -149,7 +170,12 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      */
     public function tools(): array
     {
-        return [];
+        $tools = [];
+
+        // Always add customer portal - it will handle its own authorization
+        $tools[] = new \Billing\CustomerPortal\CustomerPortal;
+
+        return $tools;
     }
 
 
