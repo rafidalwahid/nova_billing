@@ -74,7 +74,17 @@ class Customer extends Resource
      */
     public static function indexQuery(NovaRequest $request, Builder $query): Builder
     {
-        return $query->with(['user', 'tickets']);
+        return $query->with([
+            'user',
+            'orders',
+            'subscriptions',
+            'hostingAccounts',
+            'domainRegistrations',
+            'invoices',
+            'payments',
+            'transactions',
+            'tickets'
+        ]);
     }
 
     /**
@@ -171,7 +181,55 @@ class Customer extends Resource
                 ->hideWhenCreating()
                 ->hideWhenUpdating(),
 
-            HasMany::make('Support Tickets', 'tickets', Ticket::class),
+            // Customer Summary Metrics (Detail View Only)
+            Text::make('Total Orders', function () {
+                return $this->orders()->count() . ' orders';
+            })
+                ->onlyOnDetail(),
+
+            Text::make('Active Subscriptions', function () {
+                return $this->subscriptions()->where('status', 'active')->count() . ' active';
+            })
+                ->onlyOnDetail(),
+
+            Text::make('Total Spent', function () {
+                $total = $this->payments()->sum('amount');
+                return '$' . number_format($total, 2);
+            })
+                ->onlyOnDetail(),
+
+            Text::make('Outstanding Balance', function () {
+                $outstanding = $this->invoices()->where('status', '!=', 'paid')->sum('total');
+                return '$' . number_format($outstanding, 2);
+            })
+                ->onlyOnDetail(),
+
+            // Business Relationships - Core Services
+            HasMany::make('Orders', 'orders', Order::class)
+                ->sortable(),
+
+            HasMany::make('Subscriptions', 'subscriptions', Subscription::class)
+                ->sortable(),
+
+            HasMany::make('Hosting Accounts', 'hostingAccounts', HostingAccount::class)
+                ->sortable(),
+
+            HasMany::make('Domain Registrations', 'domainRegistrations', DomainRegistration::class)
+                ->sortable(),
+
+            // Financial Relationships
+            HasMany::make('Invoices', 'invoices', Invoice::class)
+                ->sortable(),
+
+            HasMany::make('Payments', 'payments', Payment::class)
+                ->sortable(),
+
+            HasMany::make('Transactions', 'transactions', Transaction::class)
+                ->sortable(),
+
+            // Support Relationship
+            HasMany::make('Support Tickets', 'tickets', Ticket::class)
+                ->sortable(),
         ];
     }
 
