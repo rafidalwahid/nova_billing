@@ -107,35 +107,18 @@ class Payment extends Model
     }
 
     /**
-     * Get the status badge color.
+     * Get the status badge color for Nova.
      */
     protected function statusColor(): Attribute
     {
         return Attribute::make(
             get: fn () => match($this->status) {
-                self::STATUS_PENDING => 'warning',
                 self::STATUS_COMPLETED => 'success',
+                self::STATUS_PENDING => 'warning',
                 self::STATUS_FAILED => 'danger',
                 self::STATUS_REFUNDED => 'info',
                 self::STATUS_CANCELLED => 'secondary',
                 default => 'secondary',
-            },
-        );
-    }
-
-    /**
-     * Get the formatted status display.
-     */
-    protected function statusDisplay(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => match($this->status) {
-                self::STATUS_PENDING => 'Pending',
-                self::STATUS_COMPLETED => 'Completed',
-                self::STATUS_FAILED => 'Failed',
-                self::STATUS_REFUNDED => 'Refunded',
-                self::STATUS_CANCELLED => 'Cancelled',
-                default => ucfirst($this->status ?? 'Unknown'),
             },
         );
     }

@@ -33,35 +33,17 @@ class ChangeTicketStatus extends Action
      */
     public function handle(ActionFields $fields, Collection $models)
     {
-        $newStatus = $fields->status;
-        $notes = $fields->notes;
+        $ticketService = app(\App\Services\TicketService::class);
         $updatedCount = 0;
         $invalidCount = 0;
 
         foreach ($models as $ticket) {
             if ($ticket instanceof Ticket) {
-                // Validate status transition
-                if (Ticket::isValidStatusTransition($ticket->status, $newStatus)) {
-                    $updateData = ['status' => $newStatus];
-                    
-                    // Add notes to internal notes if provided
-                    if ($notes) {
-                        $existingNotes = $ticket->internal_notes ?? '';
-                        $timestamp = now()->format('Y-m-d H:i:s');
-                        $user = auth()->user();
-                        $userName = $user->name ?? 'System';
-                        
-                        $newNote = "[{$timestamp}] {$userName}: Status changed to " . ucfirst(str_replace('_', ' ', $newStatus));
-                        if ($notes) {
-                            $newNote .= " - {$notes}";
-                        }
-                        
-                        $updateData['internal_notes'] = $existingNotes ? $existingNotes . "\n\n" . $newNote : $newNote;
-                    }
-                    
-                    $ticket->update($updateData);
+                try {
+                    // Delegate to service
+                    $ticketService->changeStatus($ticket, $fields->status, $fields->notes);
                     $updatedCount++;
-                } else {
+                } catch (\Exception $e) {
                     $invalidCount++;
                 }
             }

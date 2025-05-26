@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Traits\HasStatusColors;
 
 class Ticket extends Model
 {
+    use HasStatusColors;
     // Status constants
     const STATUS_OPEN = 'open';
     const STATUS_IN_PROGRESS = 'in_progress';
@@ -192,89 +194,7 @@ class Ticket extends Model
         });
     }
 
-    /**
-     * Get default department for a given category.
-     *
-     * @param string $category
-     * @return int|null
-     */
-    public static function getDefaultDepartmentForCategory($category)
-    {
-        $departmentMapping = [
-            self::CATEGORY_BILLING => 'Revenue Operations',
-            self::CATEGORY_TECHNICAL => 'Information Technology',
-            self::CATEGORY_SALES => 'Business Development',
-            self::CATEGORY_GENERAL => 'Customer Experience',
-        ];
-
-        $departmentName = $departmentMapping[$category] ?? 'Customer Experience';
-
-        $department = Department::where('name', $departmentName)->first();
-        return $department ? $department->id : null;
-    }
-
-    /**
-     * Calculate SLA due date based on priority.
-     *
-     * @param string $priority
-     * @return \Carbon\Carbon
-     */
-    public static function calculateSLADueDate($priority)
-    {
-        $slaHours = [
-            self::PRIORITY_URGENT => 2,   // 2 hours
-            self::PRIORITY_HIGH => 8,     // 8 hours
-            self::PRIORITY_NORMAL => 24,  // 24 hours
-            self::PRIORITY_LOW => 72,     // 72 hours
-        ];
-
-        $hours = $slaHours[$priority] ?? 24;
-        return now()->addHours($hours);
-    }
-
-    /**
-     * Update status-related timestamps.
-     *
-     * @param \App\Models\Ticket $ticket
-     */
-    protected static function updateStatusTimestamps($ticket)
-    {
-        switch ($ticket->status) {
-            case self::STATUS_RESOLVED:
-                if (empty($ticket->resolved_at)) {
-                    $ticket->resolved_at = now();
-                }
-                break;
-
-            case self::STATUS_CLOSED:
-                if (empty($ticket->closed_at)) {
-                    $ticket->closed_at = now();
-                }
-                if (empty($ticket->resolved_at)) {
-                    $ticket->resolved_at = now();
-                }
-                break;
-        }
-    }
-
-    /**
-     * Check if status transition is valid.
-     *
-     * @param string $fromStatus
-     * @param string $toStatus
-     * @return bool
-     */
-    public static function isValidStatusTransition($fromStatus, $toStatus)
-    {
-        $validTransitions = [
-            self::STATUS_OPEN => [self::STATUS_IN_PROGRESS, self::STATUS_RESOLVED, self::STATUS_CLOSED],
-            self::STATUS_IN_PROGRESS => [self::STATUS_OPEN, self::STATUS_RESOLVED, self::STATUS_CLOSED],
-            self::STATUS_RESOLVED => [self::STATUS_IN_PROGRESS, self::STATUS_CLOSED],
-            self::STATUS_CLOSED => [self::STATUS_IN_PROGRESS], // Can reopen if needed
-        ];
-
-        return in_array($toStatus, $validTransitions[$fromStatus] ?? []);
-    }
+    // Business logic methods moved to TicketService
 
     /**
      * Get tickets that are overdue based on SLA.
@@ -311,5 +231,36 @@ class Ticket extends Model
         return $this->sla_due_at &&
                $this->sla_due_at->isPast() &&
                !in_array($this->status, [self::STATUS_RESOLVED, self::STATUS_CLOSED]);
+    }
+
+    /**
+     * Get the status badge color for Nova.
+     */
+    protected function statusColor(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => match($this->status) {
+                self::STATUS_RESOLVED, self::STATUS_CLOSED => 'success',
+                self::STATUS_IN_PROGRESS => 'info',
+                self::STATUS_OPEN => 'warning',
+                default => 'secondary',
+            },
+        );
+    }
+
+    /**
+     * Get the priority badge color for Nova.
+     */
+    protected function priorityColor(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => match($this->priority) {
+                self::PRIORITY_URGENT => 'danger',
+                self::PRIORITY_HIGH => 'warning',
+                self::PRIORITY_NORMAL => 'info',
+                self::PRIORITY_LOW => 'success',
+                default => 'secondary',
+            },
+        );
     }
 }

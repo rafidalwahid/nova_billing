@@ -175,38 +175,5 @@ class Order extends Model
         return $query->where('status', self::STATUS_PENDING);
     }
 
-    /**
-     * Calculate subtotal from order items.
-     */
-    public function calculateSubtotal(): float
-    {
-        return $this->items()->sum('total_price');
-    }
-
-    /**
-     * Calculate tax amount (simple 10% for now).
-     */
-    public function calculateTaxAmount(): float
-    {
-        return $this->calculateSubtotal() * 0.10; // 10% tax rate
-    }
-
-    /**
-     * Calculate total from subtotal and tax.
-     */
-    public function calculateTotal(): float
-    {
-        return $this->calculateSubtotal() + $this->calculateTaxAmount();
-    }
-
-    /**
-     * Update order totals from items.
-     */
-    public function updateTotalsFromItems(): void
-    {
-        $this->subtotal = $this->calculateSubtotal();
-        $this->tax_amount = $this->calculateTaxAmount();
-        $this->total = $this->calculateTotal();
-        $this->save();
-    }
+    // Business logic methods moved to BillingService
 }

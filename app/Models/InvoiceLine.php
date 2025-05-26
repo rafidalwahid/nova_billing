@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Traits\HasBillingCycle;
 
 class InvoiceLine extends Model
 {
+    use HasBillingCycle;
     // Type constants
     const TYPE_PRODUCT = 'product';
     const TYPE_SERVICE = 'service';
@@ -80,23 +82,7 @@ class InvoiceLine extends Model
         );
     }
 
-    /**
-     * Get the formatted billing cycle.
-     */
-    protected function formattedBillingCycle(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => match($this->billing_cycle) {
-                'monthly' => 'Monthly',
-                'quarterly' => 'Quarterly',
-                'semi_annually' => 'Semi-Annually',
-                'annually' => 'Annually',
-                'biennially' => 'Biennially',
-                'triennially' => 'Triennially',
-                default => $this->billing_cycle ? ucfirst($this->billing_cycle) : null,
-            },
-        );
-    }
+    // Billing cycle display moved to HasBillingCycle trait
 
     /**
      * Get the calculated line total (quantity * unit_price).

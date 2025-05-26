@@ -38,103 +38,30 @@ class GenerateFromOrder extends Action
      */
     public function handle(ActionFields $fields, Collection $models)
     {
+        $invoiceService = app(\App\Services\InvoiceService::class);
         $invoicesCreated = 0;
         $errors = [];
 
         foreach ($models as $order) {
             if ($order instanceof Order) {
                 try {
-                    // Check if invoice already exists for this order
+                    // Skip if invoice already exists
                     if ($order->invoice) {
-                        continue; // Skip if invoice already exists
+                        continue;
                     }
 
-                    // Generate invoice within transaction
-                    $invoice = DB::transaction(function () use ($fields, $order) {
-                        // Generate unique invoice number
-                        $lastInvoice = Invoice::orderBy('id', 'desc')->first();
-                        $nextNumber = $lastInvoice ? $lastInvoice->id + 1 : 1;
-                        $invoiceNumber = 'INV-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-
-                        // Validate order totals before creating invoice
-                        if ($order->total <= 0) {
-                            throw new \InvalidArgumentException('Cannot create invoice for order with zero or negative total');
-                        }
-
-                        // Create the invoice
-                        $invoice = Invoice::create([
-                            'customer_id' => $order->customer_id,
-                            'order_id' => $order->id,
-                            'invoice_number' => $invoiceNumber,
-                            'status' => Invoice::STATUS_DRAFT,
-                            'subtotal' => $order->subtotal,
-                            'tax_amount' => $order->tax_amount,
-                            'total' => $order->total,
-                            'balance_due' => $order->total,
-                            'currency' => $order->currency,
-                            'invoice_date' => $fields->invoice_date ?? now(),
-                            'due_date' => $fields->due_date ?? now()->addDays($fields->due_days ?? 30),
-                            'notes' => $fields->notes ?? "Invoice generated from Order #{$order->order_number}",
-                            'terms' => 'Payment due within 30 days of invoice date.',
-                        ]);
-
-                        // Create invoice lines from order items
-                        $totalLineAmount = 0;
-                        foreach ($order->items as $orderItem) {
-                            InvoiceLine::create([
-                                'invoice_id' => $invoice->id,
-                                'order_item_id' => $orderItem->id,
-                                'type' => InvoiceLine::TYPE_PRODUCT,
-                                'description' => $orderItem->product_name,
-                                'quantity' => $orderItem->quantity,
-                                'unit_price' => $orderItem->unit_price,
-                                'total_price' => $orderItem->total_price,
-                                'billing_cycle' => $orderItem->billing_cycle,
-                            ]);
-                            $totalLineAmount += $orderItem->total_price;
-
-                            // Add setup fee as separate line if exists
-                            if ($orderItem->setup_fee > 0) {
-                                InvoiceLine::create([
-                                    'invoice_id' => $invoice->id,
-                                    'order_item_id' => $orderItem->id,
-                                    'type' => InvoiceLine::TYPE_FEE,
-                                    'description' => "Setup Fee - {$orderItem->product_name}",
-                                    'quantity' => 1,
-                                    'unit_price' => $orderItem->setup_fee,
-                                    'total_price' => $orderItem->setup_fee,
-                                ]);
-                                $totalLineAmount += $orderItem->setup_fee;
-                            }
-                        }
-
-                        // Validate that invoice lines total matches order subtotal
-                        if (abs($totalLineAmount - $order->subtotal) > 0.01) {
-                            throw new \InvalidArgumentException(
-                                "Invoice line total ({$totalLineAmount}) does not match order subtotal ({$order->subtotal})"
-                            );
-                        }
-
-                        // Log the invoice generation
-                        Log::info('Invoice generated from order', [
-                            'invoice_id' => $invoice->id,
-                            'invoice_number' => $invoice->invoice_number,
-                            'order_id' => $order->id,
-                            'order_number' => $order->order_number,
-                            'total' => $invoice->total,
-                        ]);
-
-                        return $invoice;
-                    });
+                    // Delegate to service
+                    $invoice = $invoiceService->generateFromOrder($order, [
+                        'invoice_date' => $fields->invoice_date,
+                        'due_date' => $fields->due_date,
+                        'due_days' => $fields->due_days,
+                        'notes' => $fields->notes,
+                    ]);
 
                     $invoicesCreated++;
 
                 } catch (\Exception $e) {
                     $errors[] = "Order #{$order->order_number}: " . $e->getMessage();
-                    Log::error('Invoice generation failed', [
-                        'order_id' => $order->id,
-                        'error' => $e->getMessage(),
-                    ]);
                 }
             }
         }
@@ -147,7 +74,7 @@ class GenerateFromOrder extends Action
             return Action::danger('Some invoices failed to generate: ' . implode('; ', $errors));
         }
 
-        return Action::message("Successfully created {$invoicesCreated} invoice(s) from selected order(s) with proper validation!");
+        return Action::message("Successfully created {$invoicesCreated} invoice(s) from selected order(s)!");
     }
 
     /**

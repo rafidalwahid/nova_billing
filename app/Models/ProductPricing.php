@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Traits\HasBillingCycle;
 
 class ProductPricing extends Model
 {
+    use HasBillingCycle;
     /**
      * The attributes that are mass assignable.
      *
@@ -51,21 +53,7 @@ class ProductPricing extends Model
         return $this->hasMany(Subscription::class);
     }
 
-    /**
-     * Get the formatted billing cycle display name.
-     */
-    protected function billingCycleDisplay(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => match($this->billing_cycle) {
-                'monthly' => 'Monthly',
-                'quarterly' => 'Quarterly (3 months)',
-                'semi_annually' => 'Semi-Annually (6 months)',
-                'annually' => 'Annually (12 months)',
-                default => ucfirst($this->billing_cycle),
-            },
-        );
-    }
+    // Billing cycle display moved to HasBillingCycle trait
 
     /**
      * Get the total first payment (setup + recurring).

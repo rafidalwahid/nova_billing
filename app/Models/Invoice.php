@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Traits\HasStatusColors;
 
 class Invoice extends Model
 {
+    use HasStatusColors;
     // Status constants
     const STATUS_DRAFT = 'draft';
     const STATUS_SENT = 'sent';
@@ -159,39 +161,7 @@ class Invoice extends Model
         );
     }
 
-    /**
-     * Get the status badge color.
-     */
-    protected function statusColor(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => match($this->status) {
-                self::STATUS_DRAFT => 'secondary',
-                self::STATUS_SENT => 'info',
-                self::STATUS_PAID => 'success',
-                self::STATUS_OVERDUE => 'danger',
-                self::STATUS_CANCELLED => 'warning',
-                default => 'secondary',
-            },
-        );
-    }
-
-    /**
-     * Get the formatted status display.
-     */
-    protected function statusDisplay(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => match($this->status) {
-                self::STATUS_DRAFT => 'Draft',
-                self::STATUS_SENT => 'Sent',
-                self::STATUS_PAID => 'Paid',
-                self::STATUS_OVERDUE => 'Overdue',
-                self::STATUS_CANCELLED => 'Cancelled',
-                default => ucfirst($this->status ?? 'Unknown'),
-            },
-        );
-    }
+    // Status color and display methods moved to HasStatusColors trait
 
     /**
      * Check if the invoice is overdue.
@@ -267,20 +237,21 @@ class Invoice extends Model
     }
 
     /**
-     * Calculate balance due based on total payments.
+     * Get the status badge color for Nova.
      */
-    public function calculateBalanceDue(): float
+    protected function statusColor(): Attribute
     {
-        $totalPayments = $this->payments()->sum('amount');
-        return max(0, $this->total - $totalPayments);
+        return Attribute::make(
+            get: fn () => match($this->status) {
+                self::STATUS_PAID => 'success',
+                self::STATUS_SENT => 'info',
+                self::STATUS_OVERDUE => 'danger',
+                self::STATUS_CANCELLED => 'warning',
+                self::STATUS_DRAFT => 'secondary',
+                default => 'secondary',
+            },
+        );
     }
 
-    /**
-     * Update balance due based on payments.
-     */
-    public function updateBalanceDue(): void
-    {
-        $this->balance_due = $this->calculateBalanceDue();
-        $this->save();
-    }
+    // Business logic methods moved to InvoiceService and PaymentService
 }

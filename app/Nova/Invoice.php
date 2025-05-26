@@ -105,68 +105,22 @@ class Invoice extends Resource
                 ->creationRules('unique:invoices,invoice_number')
                 ->updateRules('unique:invoices,invoice_number,{{resourceId}}'),
 
-            Text::make('Status')
-                ->sortable()
-                ->asHtml()
-                ->displayUsing(function ($status, $resource) {
-                    $statusDisplay = match($status) {
-                        InvoiceModel::STATUS_DRAFT => [
-                            'label' => 'Draft',
-                            'icon' => '📝',
-                            'bg' => 'bg-gradient-to-r from-slate-100 to-slate-200',
-                            'text' => 'text-slate-700',
-                            'border' => 'border-slate-300',
-                            'shadow' => 'shadow-slate-200'
-                        ],
-                        InvoiceModel::STATUS_SENT => [
-                            'label' => 'Sent',
-                            'icon' => '📤',
-                            'bg' => 'bg-gradient-to-r from-blue-100 to-blue-200',
-                            'text' => 'text-blue-700',
-                            'border' => 'border-blue-300',
-                            'shadow' => 'shadow-blue-200'
-                        ],
-                        InvoiceModel::STATUS_PAID => [
-                            'label' => 'Paid',
-                            'icon' => '✅',
-                            'bg' => 'bg-gradient-to-r from-emerald-100 to-emerald-200',
-                            'text' => 'text-emerald-700',
-                            'border' => 'border-emerald-300',
-                            'shadow' => 'shadow-emerald-200'
-                        ],
-                        InvoiceModel::STATUS_OVERDUE => [
-                            'label' => 'Overdue',
-                            'icon' => '⚠️',
-                            'bg' => 'bg-gradient-to-r from-red-100 to-red-200',
-                            'text' => 'text-red-700',
-                            'border' => 'border-red-300',
-                            'shadow' => 'shadow-red-200'
-                        ],
-                        InvoiceModel::STATUS_CANCELLED => [
-                            'label' => 'Cancelled',
-                            'icon' => '❌',
-                            'bg' => 'bg-gradient-to-r from-amber-100 to-amber-200',
-                            'text' => 'text-amber-700',
-                            'border' => 'border-amber-300',
-                            'shadow' => 'shadow-amber-200'
-                        ],
-                        default => [
-                            'label' => ucfirst($status ?? 'Unknown'),
-                            'icon' => '❓',
-                            'bg' => 'bg-gradient-to-r from-gray-100 to-gray-200',
-                            'text' => 'text-gray-700',
-                            'border' => 'border-gray-300',
-                            'shadow' => 'shadow-gray-200'
-                        ],
-                    };
-
-                    return '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ' .
-                           $statusDisplay['bg'] . ' ' . $statusDisplay['text'] . ' ' . $statusDisplay['border'] .
-                           ' shadow-sm ' . $statusDisplay['shadow'] . ' hover:shadow-md transition-all duration-200">' .
-                           '<span class="text-base leading-none">' . $statusDisplay['icon'] . '</span>' .
-                           '<span class="tracking-wide">' . $statusDisplay['label'] . '</span>' .
-                           '</div>';
-                }),
+            Badge::make('Status')
+                ->map([
+                    InvoiceModel::STATUS_DRAFT => 'secondary',
+                    InvoiceModel::STATUS_SENT => 'info',
+                    InvoiceModel::STATUS_PAID => 'success',
+                    InvoiceModel::STATUS_OVERDUE => 'danger',
+                    InvoiceModel::STATUS_CANCELLED => 'warning',
+                ])
+                ->labels([
+                    InvoiceModel::STATUS_DRAFT => 'Draft',
+                    InvoiceModel::STATUS_SENT => 'Sent',
+                    InvoiceModel::STATUS_PAID => 'Paid',
+                    InvoiceModel::STATUS_OVERDUE => 'Overdue',
+                    InvoiceModel::STATUS_CANCELLED => 'Cancelled',
+                ])
+                ->sortable(),
 
             Select::make('Status')
                 ->options([

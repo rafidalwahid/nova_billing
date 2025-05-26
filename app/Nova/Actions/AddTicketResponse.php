@@ -34,10 +34,9 @@ class AddTicketResponse extends Action
      */
     public function handle(ActionFields $fields, Collection $models)
     {
-        $message = $fields->message;
-        $isInternal = $fields->is_internal;
+        $ticketService = app(\App\Services\TicketService::class);
         $user = auth()->user();
-        
+
         // Get the admin user record for the authenticated user
         $adminUser = AdminUser::whereHas('user', function ($query) use ($user) {
             $query->where('id', $user->id);
@@ -48,45 +47,29 @@ class AddTicketResponse extends Action
         }
 
         $responsesAdded = 0;
+        $errors = [];
 
         foreach ($models as $ticket) {
             if ($ticket instanceof Ticket) {
-                // Calculate response time if this is the first response
-                $responseTimeMinutes = null;
-                if (!$ticket->first_response_at) {
-                    $responseTimeMinutes = $ticket->created_at->diffInMinutes(now());
+                try {
+                    // Delegate to service
+                    $ticketService->addResponse($ticket, [
+                        'admin_user_id' => $adminUser->id,
+                        'message' => $fields->message,
+                        'is_internal' => $fields->is_internal,
+                    ]);
+                    $responsesAdded++;
+                } catch (\Exception $e) {
+                    $errors[] = "Ticket #{$ticket->ticket_number}: " . $e->getMessage();
                 }
-
-                // Create the response
-                TicketResponse::create([
-                    'ticket_id' => $ticket->id,
-                    'admin_user_id' => $adminUser->id,
-                    'type' => $isInternal ? TicketResponse::TYPE_INTERNAL : TicketResponse::TYPE_STAFF,
-                    'message' => $message,
-                    'is_internal' => $isInternal,
-                    'response_time_minutes' => $responseTimeMinutes,
-                ]);
-
-                // Update ticket timestamps
-                $updateData = [
-                    'last_response_at' => now(),
-                ];
-
-                if (!$ticket->first_response_at) {
-                    $updateData['first_response_at'] = now();
-                }
-
-                // If ticket is open and this is not an internal note, move to in progress
-                if ($ticket->status === Ticket::STATUS_OPEN && !$isInternal) {
-                    $updateData['status'] = Ticket::STATUS_IN_PROGRESS;
-                }
-
-                $ticket->update($updateData);
-                $responsesAdded++;
             }
         }
 
-        $responseType = $isInternal ? 'internal note' : 'response';
+        if (!empty($errors)) {
+            return Action::danger('Some responses failed: ' . implode('; ', $errors));
+        }
+
+        $responseType = $fields->is_internal ? 'internal note' : 'response';
         return Action::message("Successfully added {$responseType} to {$responsesAdded} ticket(s).");
     }
 

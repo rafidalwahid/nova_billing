@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Traits\HasBillingCycle;
+use App\Traits\HasStatusColors;
 use Carbon\Carbon;
 
 class Subscription extends Model
 {
+    use HasBillingCycle, HasStatusColors;
     // Status constants
     const STATUS_PENDING = 'pending';
     const STATUS_ACTIVE = 'active';
@@ -225,20 +228,23 @@ class Subscription extends Model
     }
 
     /**
-     * Calculate the next billing date based on billing cycle.
+     * Get the status badge color for Nova.
      */
-    public function calculateNextBillingDate(Carbon $fromDate = null): Carbon
+    protected function statusColor(): Attribute
     {
-        $fromDate = $fromDate ?? Carbon::parse($this->next_billing_date ?? $this->start_date);
-
-        return match($this->billing_cycle) {
-            'monthly' => $fromDate->addMonth(),
-            'quarterly' => $fromDate->addMonths(3),
-            'semi_annually' => $fromDate->addMonths(6),
-            'annually' => $fromDate->addYear(),
-            default => $fromDate->addMonth(),
-        };
+        return Attribute::make(
+            get: fn () => match($this->status) {
+                self::STATUS_ACTIVE => 'success',
+                self::STATUS_PENDING => 'warning',
+                self::STATUS_SUSPENDED => 'danger',
+                self::STATUS_CANCELLED => 'secondary',
+                self::STATUS_EXPIRED => 'secondary',
+                default => 'secondary',
+            },
+        );
     }
+
+    // Business logic methods moved to BillingService
 
     /**
      * Scope a query to only include active subscriptions.

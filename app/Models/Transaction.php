@@ -100,22 +100,6 @@ class Transaction extends Model
     }
 
     /**
-     * Get the status badge color.
-     */
-    protected function statusColor(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => match($this->status) {
-                self::STATUS_PENDING => 'warning',
-                self::STATUS_COMPLETED => 'success',
-                self::STATUS_FAILED => 'danger',
-                self::STATUS_CANCELLED => 'secondary',
-                default => 'secondary',
-            },
-        );
-    }
-
-    /**
      * Get the formatted type display.
      */
     protected function typeDisplay(): Attribute
@@ -133,17 +117,17 @@ class Transaction extends Model
     }
 
     /**
-     * Get the formatted status display.
+     * Get the status badge color for Nova.
      */
-    protected function statusDisplay(): Attribute
+    protected function statusColor(): Attribute
     {
         return Attribute::make(
             get: fn () => match($this->status) {
-                self::STATUS_PENDING => 'Pending',
-                self::STATUS_COMPLETED => 'Completed',
-                self::STATUS_FAILED => 'Failed',
-                self::STATUS_CANCELLED => 'Cancelled',
-                default => ucfirst($this->status ?? 'Unknown'),
+                self::STATUS_COMPLETED => 'success',
+                self::STATUS_PENDING => 'warning',
+                self::STATUS_FAILED => 'danger',
+                self::STATUS_CANCELLED => 'secondary',
+                default => 'secondary',
             },
         );
     }
