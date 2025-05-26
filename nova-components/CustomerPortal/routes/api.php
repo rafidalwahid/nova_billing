@@ -30,11 +30,25 @@ Route::get('/dashboard', function (Request $request) {
         'stats' => [
             'total_orders' => $customer->orders()->count(),
             'active_subscriptions' => $customer->subscriptions()->where('status', 'active')->count(),
-            'total_spent' => $customer->payments()->sum('amount'),
-            'outstanding_balance' => $customer->invoices()->where('status', '!=', 'paid')->sum('total'),
         ],
-        'recent_orders' => $customer->orders()->latest()->take(5)->with('items')->get(),
-        'recent_invoices' => $customer->invoices()->latest()->take(5)->get(),
+        'recent_orders' => $customer->orders()->latest()->take(3)->get()->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status,
+                'total' => $order->total,
+                'created_at' => $order->created_at,
+            ];
+        }),
+        'recent_invoices' => $customer->invoices()->latest()->take(3)->get()->map(function ($invoice) {
+            return [
+                'id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'status' => $invoice->status,
+                'total' => $invoice->total,
+                'created_at' => $invoice->created_at,
+            ];
+        }),
         'open_tickets' => $customer->tickets()->whereIn('status', ['open', 'in_progress'])->count(),
     ]);
 });

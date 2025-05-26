@@ -61,11 +61,19 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         Nova::mainMenu(function (Request $request) {
             $user = $request->user();
 
-            // If user is a customer, show minimal menu
+            // If user is a customer, show customer portal menu
             if ($user && $user->isCustomer()) {
                 return [
-                    // Customers see main dashboard but will use Customer Portal tool for functionality
                     \Laravel\Nova\Menu\MenuSection::dashboard(\App\Nova\Dashboards\Main::class)->icon('chart-bar'),
+
+                    \Laravel\Nova\Menu\MenuSection::make('Customer Portal', [
+                        \Laravel\Nova\Menu\MenuItem::externalLink('Dashboard', '/nova/customer-portal/dashboard'),
+                        \Laravel\Nova\Menu\MenuItem::externalLink('My Orders', '/nova/customer-portal/orders'),
+                        \Laravel\Nova\Menu\MenuItem::externalLink('My Invoices', '/nova/customer-portal/invoices'),
+                        \Laravel\Nova\Menu\MenuItem::externalLink('My Services', '/nova/customer-portal/services'),
+                        \Laravel\Nova\Menu\MenuItem::externalLink('Support', '/nova/customer-portal/tickets'),
+                        \Laravel\Nova\Menu\MenuItem::externalLink('My Profile', '/nova/customer-portal/profile'),
+                    ])->icon('user-circle')->collapsible(),
                 ];
             }
 

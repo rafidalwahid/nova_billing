@@ -30,10 +30,12 @@ class CustomerPortal extends Tool
                 ->path('/customer-portal/orders'),
             MenuItem::make('Invoices')
                 ->path('/customer-portal/invoices'),
-            MenuItem::make('Tickets')
+            MenuItem::make('Services')
+                ->path('/customer-portal/services'),
+            MenuItem::make('Support')
                 ->path('/customer-portal/tickets'),
-            MenuItem::make('Nova')
-                ->path('/nova'),
+            MenuItem::make('Profile')
+                ->path('/customer-portal/profile'),
         ])->icon('user')->collapsible();
     }
 
