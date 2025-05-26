@@ -12,3 +12,6 @@ Artisan::command('inspire', function () {
 Schedule::command('billing:update-domain-statuses')->daily();
 Schedule::command('billing:sync-subscription-statuses')->daily();
 Schedule::command('billing:fix-server-counts')->weekly();
+
+// Schedule automated billing
+Schedule::command('billing:generate-recurring-invoices')->daily();

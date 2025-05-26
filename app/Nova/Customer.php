@@ -15,6 +15,7 @@ use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class Customer extends Resource
 {
@@ -67,6 +68,14 @@ class Customer extends Resource
     public static $search = [
         'id', 'first_name', 'last_name', 'company_name',
     ];
+
+    /**
+     * Build an "index" query for the given resource.
+     */
+    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    {
+        return $query->with(['user', 'tickets']);
+    }
 
     /**
      * Get the fields displayed by the resource.

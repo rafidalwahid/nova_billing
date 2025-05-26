@@ -14,6 +14,7 @@ use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Payment as PaymentModel;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class Payment extends Resource
 {
@@ -46,6 +47,14 @@ class Payment extends Resource
     public static $search = [
         'id', 'gateway_transaction_id', 'reference_number',
     ];
+
+    /**
+     * Build an "index" query for the given resource.
+     */
+    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    {
+        return $query->with(['invoice', 'customer']);
+    }
 
     /**
      * Get the fields displayed by the resource.

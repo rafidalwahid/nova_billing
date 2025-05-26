@@ -14,6 +14,7 @@ use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\Boolean;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class Ticket extends Resource
 {
@@ -46,6 +47,14 @@ class Ticket extends Resource
     public static $search = [
         'id', 'ticket_number', 'subject', 'description',
     ];
+
+    /**
+     * Build an "index" query for the given resource.
+     */
+    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    {
+        return $query->with(['customer', 'department', 'assignedTo']);
+    }
 
     /**
      * Get the displayable label of the resource.

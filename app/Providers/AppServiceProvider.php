@@ -8,6 +8,8 @@ use App\Events\DomainStatusChanged;
 use App\Events\SubscriptionStatusChanged;
 use App\Listeners\SyncSubscriptionOnDomainChange;
 use App\Listeners\CascadeSubscriptionStatusToServices;
+use App\Models\Order;
+use App\Observers\OrderObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register model observers
+        Order::observe(OrderObserver::class);
+
         // Register event listeners
         Event::listen(
             DomainStatusChanged::class,

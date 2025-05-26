@@ -27,32 +27,7 @@ class Order extends Model
         'ordered_at',
     ];
 
-    /**
-     * Boot the model and register event listeners.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Calculate totals before saving
-        static::saving(function ($order) {
-            // Validate no negative amounts
-            if ($order->subtotal < 0) {
-                throw new \InvalidArgumentException('Order subtotal cannot be negative');
-            }
-            if ($order->tax_amount < 0) {
-                throw new \InvalidArgumentException('Order tax amount cannot be negative');
-            }
-            if ($order->total < 0) {
-                throw new \InvalidArgumentException('Order total cannot be negative');
-            }
-
-            // Auto-calculate total if not manually set
-            if ($order->isDirty(['subtotal', 'tax_amount']) && !$order->isDirty('total')) {
-                $order->total = $order->subtotal + $order->tax_amount;
-            }
-        });
-    }
+    // Note: Order validation and total calculation is now handled by OrderObserver
 
     /**
      * The attributes that should be cast.
