@@ -14,15 +14,13 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 |
 */
 
-// Default route - redirect to dashboard
+// Default route - redirect to Nova customer dashboard
 Route::get('/', function (NovaRequest $request) {
-    return redirect('/nova/customer-portal/dashboard');
+    return redirect('/nova/dashboards/customer-dashboard');
 });
 
-// Dashboard route
-Route::get('/dashboard', function (NovaRequest $request) {
-    return inertia('CustomerPortal');
-});
+// Dashboard functionality moved to Nova dashboard
+// Route::get('/dashboard', ...) - REMOVED
 
 // Orders route
 Route::get('/orders', function (NovaRequest $request) {

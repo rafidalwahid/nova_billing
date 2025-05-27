@@ -13,6 +13,12 @@ class InvoicePolicy
      */
     public function viewAny(User $user): bool
     {
+        // Customers can view their own invoices
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'view-invoice-records');
     }
 
@@ -21,6 +27,12 @@ class InvoicePolicy
      */
     public function view(User $user, Invoice $invoice): bool
     {
+        // Customers can only view their own invoices
+        if ($user->isCustomer()) {
+            return $invoice->customer_id === $user->userable_id;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'view-invoice-records');
     }
 

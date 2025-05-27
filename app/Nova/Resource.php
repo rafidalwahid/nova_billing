@@ -57,9 +57,17 @@ abstract class Resource extends NovaResource
             return false;
         }
 
-        // Customers cannot access admin resources (except Customer resource)
-        if ($user->isCustomer() && static::class !== \App\Nova\Customer::class) {
-            return false;
+        // Customers can only access specific customer-facing resources
+        if ($user->isCustomer()) {
+            $allowedCustomerResources = [
+                \App\Nova\Customer::class,
+                \App\Nova\CustomerOrder::class,
+                \App\Nova\CustomerOrderItem::class,
+            ];
+
+            if (!in_array(static::class, $allowedCustomerResources)) {
+                return false;
+            }
         }
 
         // Staff users have access based on permissions

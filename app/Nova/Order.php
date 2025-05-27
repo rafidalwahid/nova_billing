@@ -154,7 +154,10 @@ class Order extends Resource
      */
     public function filters(NovaRequest $request): array
     {
-        return [];
+        return [
+            new \App\Nova\Filters\OrderStatus,
+            new \App\Nova\Filters\OrderDateRange,
+        ];
     }
 
     /**

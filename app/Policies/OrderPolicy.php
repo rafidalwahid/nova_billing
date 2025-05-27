@@ -13,6 +13,12 @@ class OrderPolicy
      */
     public function viewAny(User $user): bool
     {
+        // Customers can view their own orders
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'order_management.view');
     }
 
@@ -21,6 +27,12 @@ class OrderPolicy
      */
     public function view(User $user, Order $order): bool
     {
+        // Customers can only view their own orders
+        if ($user->isCustomer()) {
+            return $order->customer_id === $user->userable_id;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'order_management.view');
     }
 

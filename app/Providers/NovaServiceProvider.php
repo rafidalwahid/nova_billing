@@ -20,11 +20,11 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
         parent::boot();
         Nova::withBreadcrumbs();
 
-        // Set initial path for customers to customer portal
+        // Set initial path for customers to customer dashboard
         Nova::initialPath(function (Request $request) {
             $user = $request->user();
             if ($user && $user->isCustomer()) {
-                return '/customer-portal/dashboard';
+                return '/dashboards/customer-dashboard';
             }
             return '/dashboards/main';
         });
@@ -46,10 +46,15 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\DomainRegistration::class,
             \App\Nova\Order::class,
             \App\Nova\OrderItem::class,
+            \App\Nova\CustomerOrder::class, // Customer-facing order resource
+            \App\Nova\CustomerOrderItem::class, // Customer-facing order item resource
             \App\Nova\Invoice::class,
             \App\Nova\InvoiceLine::class,
+            \App\Nova\CustomerInvoice::class, // Customer-facing invoice resource
+            \App\Nova\CustomerInvoiceLine::class, // Customer-facing invoice line resource
             \App\Nova\Payment::class,
             \App\Nova\PaymentMethod::class,
+            \App\Nova\CustomerPayment::class, // Customer-facing payment resource
             \App\Nova\Transaction::class,
             \App\Nova\Subscription::class,
             \App\Nova\SubscriptionItem::class,
@@ -64,12 +69,11 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             // If user is a customer, show customer portal menu
             if ($user && $user->isCustomer()) {
                 return [
-                    \Laravel\Nova\Menu\MenuSection::dashboard(\App\Nova\Dashboards\Main::class)->icon('chart-bar'),
+                    \Laravel\Nova\Menu\MenuSection::dashboard(\App\Nova\Dashboards\CustomerDashboard::class)->icon('chart-bar'),
 
-                    \Laravel\Nova\Menu\MenuSection::make('Customer Portal', [
-                        \Laravel\Nova\Menu\MenuItem::externalLink('Dashboard', '/nova/customer-portal/dashboard'),
-                        \Laravel\Nova\Menu\MenuItem::externalLink('My Orders', '/nova/customer-portal/orders'),
-                        \Laravel\Nova\Menu\MenuItem::externalLink('My Invoices', '/nova/customer-portal/invoices'),
+                    \Laravel\Nova\Menu\MenuSection::make('My Account', [
+                        \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerOrder::class),
+                        \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerInvoice::class),
                         \Laravel\Nova\Menu\MenuItem::externalLink('My Services', '/nova/customer-portal/services'),
                         \Laravel\Nova\Menu\MenuItem::externalLink('Support', '/nova/customer-portal/tickets'),
                         \Laravel\Nova\Menu\MenuItem::externalLink('My Profile', '/nova/customer-portal/profile'),
@@ -161,29 +165,25 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
     /**
      * Get the dashboards that should be listed in the Nova sidebar.
-     *
-     * @return array<int, \Laravel\Nova\Dashboard>
      */
     protected function dashboards(): array
     {
         return [
             new \App\Nova\Dashboards\Main,
+            new \App\Nova\Dashboards\CustomerDashboard,
         ];
     }
 
     /**
      * Get the tools that should be listed in the Nova sidebar.
-     *
-     * @return array<int, \Laravel\Nova\Tool>
      */
     public function tools(): array
     {
-        $tools = [];
-
-        // Always add customer portal - it will handle its own authorization
-        $tools[] = new \Billing\CustomerPortal\CustomerPortal;
-
-        return $tools;
+        return [
+            // Customer portal functionality now handled by Nova dashboard and resources
+            // Commented out Vue-based customer portal:
+            // new \Billing\CustomerPortal\CustomerPortal;
+        ];
     }
 
 

@@ -13,6 +13,12 @@ class PaymentPolicy
      */
     public function viewAny(User $user): bool
     {
+        // Customers can view their own payments
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'view-payment-records');
     }
 
@@ -21,6 +27,12 @@ class PaymentPolicy
      */
     public function view(User $user, Payment $payment): bool
     {
+        // Customers can only view payments for their own invoices
+        if ($user->isCustomer()) {
+            return $payment->invoice && $payment->invoice->customer_id === $user->userable_id;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'view-payment-records');
     }
 

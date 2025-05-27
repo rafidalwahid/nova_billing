@@ -13,6 +13,12 @@ class InvoiceLinePolicy
      */
     public function viewAny(User $user): bool
     {
+        // Customers can view invoice lines for their own invoices
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'view-invoice-line-items');
     }
 
@@ -21,6 +27,12 @@ class InvoiceLinePolicy
      */
     public function view(User $user, InvoiceLine $invoiceLine): bool
     {
+        // Customers can only view invoice lines from their own invoices
+        if ($user->isCustomer()) {
+            return $invoiceLine->invoice && $invoiceLine->invoice->customer_id === $user->userable_id;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'view-invoice-line-items');
     }
 

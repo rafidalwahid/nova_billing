@@ -4,7 +4,7 @@
 
 /**
  * Format money amount with commas and decimal places
- * @param {number|string} amount 
+ * @param {number|string} amount
  * @returns {string}
  */
 export function formatMoney(amount) {
@@ -14,7 +14,7 @@ export function formatMoney(amount) {
 
 /**
  * Format date to readable format
- * @param {string} date 
+ * @param {string} date
  * @returns {string}
  */
 export function formatDate(date) {
@@ -27,8 +27,21 @@ export function formatDate(date) {
 }
 
 /**
+ * Format time to readable format
+ * @param {string} date
+ * @returns {string}
+ */
+export function formatTime(date) {
+  if (!date) return ''
+  return new Date(date).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+/**
  * Get initials from a name
- * @param {string} name 
+ * @param {string} name
  * @returns {string}
  */
 export function getInitials(name) {
@@ -42,7 +55,7 @@ export function getInitials(name) {
 
 /**
  * Get CSS classes for order status
- * @param {string} status 
+ * @param {string} status
  * @returns {string}
  */
 export function getOrderStatusClass(status) {
@@ -58,7 +71,7 @@ export function getOrderStatusClass(status) {
 
 /**
  * Get CSS classes for invoice status
- * @param {string} status 
+ * @param {string} status
  * @returns {string}
  */
 export function getInvoiceStatusClass(status) {
@@ -75,7 +88,7 @@ export function getInvoiceStatusClass(status) {
 
 /**
  * Get CSS classes for customer status
- * @param {string} status 
+ * @param {string} status
  * @returns {string}
  */
 export function getCustomerStatusClass(status) {
@@ -105,9 +118,33 @@ export class CustomerPortalAPI {
     }
   }
 
-  static async getOrders() {
+  // Orders API - DEPRECATED: Now handled by Nova CustomerOrder resource
+  // These methods are kept for reference but are no longer used
+  // Orders are now managed through Nova's CustomerOrder resource
+  /*
+  static async getOrders(page = 1, filters = {}) {
     try {
-      const response = await Nova.request().get('/nova-vendor/customer-portal/orders')
+      const params = new URLSearchParams()
+      params.append('page', page)
+
+      // Add filter parameters
+      if (filters.search) {
+        params.append('search', filters.search)
+      }
+      if (filters.status) {
+        params.append('status', filters.status)
+      }
+      if (filters.sort_by) {
+        params.append('sort_by', filters.sort_by)
+      }
+      if (filters.sort_direction) {
+        params.append('sort_direction', filters.sort_direction)
+      }
+      if (filters.per_page) {
+        params.append('per_page', filters.per_page)
+      }
+
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/orders?${params.toString()}`)
       return response.data
     } catch (error) {
       console.error('Error loading orders:', error)
@@ -115,9 +152,51 @@ export class CustomerPortalAPI {
     }
   }
 
-  static async getInvoices() {
+  static async getOrder(orderId) {
     try {
-      const response = await Nova.request().get('/nova-vendor/customer-portal/invoices')
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/orders/${orderId}`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading order:', error)
+      throw error
+    }
+  }
+
+  static async getOrderItems(orderId) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/orders/${orderId}/items`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading order items:', error)
+      throw error
+    }
+  }
+  */
+
+  // Invoices API
+  static async getInvoices(page = 1, filters = {}) {
+    try {
+      const params = new URLSearchParams()
+      params.append('page', page)
+
+      // Add filter parameters
+      if (filters.search) {
+        params.append('search', filters.search)
+      }
+      if (filters.status) {
+        params.append('status', filters.status)
+      }
+      if (filters.sort_by) {
+        params.append('sort_by', filters.sort_by)
+      }
+      if (filters.sort_direction) {
+        params.append('sort_direction', filters.sort_direction)
+      }
+      if (filters.per_page) {
+        params.append('per_page', filters.per_page)
+      }
+
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/invoices?${params.toString()}`)
       return response.data
     } catch (error) {
       console.error('Error loading invoices:', error)
@@ -125,12 +204,159 @@ export class CustomerPortalAPI {
     }
   }
 
-  static async getTickets() {
+  static async getInvoice(invoiceId) {
     try {
-      const response = await Nova.request().get('/nova-vendor/customer-portal/tickets')
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/invoices/${invoiceId}`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading invoice:', error)
+      throw error
+    }
+  }
+
+  static async getInvoicePayments(invoiceId) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/invoices/${invoiceId}/payments`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading invoice payments:', error)
+      throw error
+    }
+  }
+
+  static async downloadInvoicePdf(invoiceId) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/invoices/${invoiceId}/pdf`)
+      return response.data
+    } catch (error) {
+      console.error('Error downloading invoice PDF:', error)
+      throw error
+    }
+  }
+
+  // Services API
+  static async getServices() {
+    try {
+      const response = await Nova.request().get('/nova-vendor/customer-portal/services')
+      return response.data
+    } catch (error) {
+      console.error('Error loading services:', error)
+      throw error
+    }
+  }
+
+  static async getHostingAccounts(page = 1) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/hosting-accounts?page=${page}`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading hosting accounts:', error)
+      throw error
+    }
+  }
+
+  static async getDomains(page = 1) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/domains?page=${page}`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading domains:', error)
+      throw error
+    }
+  }
+
+  static async getSubscriptions(page = 1) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/subscriptions?page=${page}`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading subscriptions:', error)
+      throw error
+    }
+  }
+
+  // Support Tickets API
+  static async getTickets(page = 1) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/tickets?page=${page}`)
       return response.data
     } catch (error) {
       console.error('Error loading tickets:', error)
+      throw error
+    }
+  }
+
+  static async getTicket(ticketId) {
+    try {
+      const response = await Nova.request().get(`/nova-vendor/customer-portal/tickets/${ticketId}`)
+      return response.data
+    } catch (error) {
+      console.error('Error loading ticket:', error)
+      throw error
+    }
+  }
+
+  static async createTicket(ticketData) {
+    try {
+      const response = await Nova.request().post('/nova-vendor/customer-portal/tickets', ticketData)
+      return response.data
+    } catch (error) {
+      console.error('Error creating ticket:', error)
+      throw error
+    }
+  }
+
+  static async addTicketResponse(ticketId, responseData) {
+    try {
+      const response = await Nova.request().post(`/nova-vendor/customer-portal/tickets/${ticketId}/responses`, responseData)
+      return response.data
+    } catch (error) {
+      console.error('Error adding ticket response:', error)
+      throw error
+    }
+  }
+
+  static async uploadTicketAttachment(ticketId, formData) {
+    try {
+      const response = await Nova.request().post(`/nova-vendor/customer-portal/tickets/${ticketId}/attachments`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error uploading ticket attachment:', error)
+      throw error
+    }
+  }
+
+  // Profile API
+  static async getProfile() {
+    try {
+      const response = await Nova.request().get('/nova-vendor/customer-portal/profile')
+      return response.data
+    } catch (error) {
+      console.error('Error loading profile:', error)
+      throw error
+    }
+  }
+
+  static async updateProfile(profileData) {
+    try {
+      const response = await Nova.request().put('/nova-vendor/customer-portal/profile', profileData)
+      return response.data
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      throw error
+    }
+  }
+
+  static async changePassword(passwordData) {
+    try {
+      const response = await Nova.request().put('/nova-vendor/customer-portal/profile/password', passwordData)
+      return response.data
+    } catch (error) {
+      console.error('Error changing password:', error)
       throw error
     }
   }
