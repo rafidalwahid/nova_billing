@@ -36,7 +36,7 @@ class AdminUserSeeder extends Seeder
                 'user' => [
                     'name' => 'Marcus Thompson',
                     'email' => 'marcus.thompson@billingcorp.com',
-                    'password' => Hash::make('SecurePass123!'),
+                    'password' => Hash::make('password'),
                 ],
                 'profile' => [
                     'first_name' => 'Marcus',

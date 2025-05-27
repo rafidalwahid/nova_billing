@@ -32,13 +32,20 @@ class TicketSeeder extends Seeder
         $itDept = Department::where('name', 'Information Technology')->first();
         $salesDept = Department::where('name', 'Business Development')->first();
 
+        // Get John Doe customer specifically for testing
+        $johnDoe = $customers->where('first_name', 'John')->where('last_name', 'Doe')->first();
+        if (!$johnDoe) {
+            $johnDoe = $customers->first(); // Fallback to first customer
+        }
+
         // Create realistic support tickets
         $tickets = [
+            // Assign first two tickets specifically to John Doe for testing
             [
                 'ticket_number' => 'TKT-000001',
-                'customer_id' => $customers->random()->id,
-                'assigned_to' => $adminUsers->where('department_id', $customerExpDept->id)->first()?->id,
-                'department_id' => $customerExpDept->id,
+                'customer_id' => $johnDoe->id,
+                'assigned_to' => $adminUsers->where('department_id', $customerExpDept?->id)->first()?->id,
+                'department_id' => $customerExpDept?->id,
                 'subject' => 'Unable to access billing dashboard',
                 'description' => 'I am unable to log into my billing dashboard. When I try to login, I get an error message saying "Invalid credentials" even though I am using the correct password.',
                 'status' => Ticket::STATUS_OPEN,
@@ -50,9 +57,9 @@ class TicketSeeder extends Seeder
             ],
             [
                 'ticket_number' => 'TKT-000002',
-                'customer_id' => $customers->random()->id,
-                'assigned_to' => $adminUsers->where('department_id', $revenueDept->id)->first()?->id,
-                'department_id' => $revenueDept->id,
+                'customer_id' => $johnDoe->id,
+                'assigned_to' => $adminUsers->where('department_id', $revenueDept?->id)->first()?->id,
+                'department_id' => $revenueDept?->id,
                 'subject' => 'Incorrect billing amount on latest invoice',
                 'description' => 'My latest invoice shows a charge of $299.99 but my subscription plan should only be $199.99 per month. Please review and correct this billing error.',
                 'status' => Ticket::STATUS_IN_PROGRESS,

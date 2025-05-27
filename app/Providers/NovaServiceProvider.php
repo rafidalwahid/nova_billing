@@ -76,6 +76,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                         \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerOrder::class),
                         \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerInvoice::class),
                     ])->icon('user-circle')->collapsible(),
+
+                    \Laravel\Nova\Menu\MenuSection::make('Support', [
+                        \Laravel\Nova\Menu\MenuItem::externalLink('Customer Support', '/nova/customer-support'),
+                    ])->icon('support')->collapsible(),
                 ];
             }
 
@@ -177,9 +181,15 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      */
     public function tools(): array
     {
-        return [
-            // No tools registered
+        \Log::info('NovaServiceProvider tools() method called');
+
+        $tools = [
+            new \Billing\CustomerSupport\CustomerSupport,
         ];
+
+        \Log::info('Tools registered', ['count' => count($tools)]);
+
+        return $tools;
     }
 
 

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c2d37757e85e9de26ada3fdf9dcd6ec8",
+    "content-hash": "b0f6f9c7d1ae5a7e4914412038166317",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -59,6 +59,47 @@
                 "source": "https://github.com/Bacon/BaconQrCode/tree/v3.0.1"
             },
             "time": "2024-10-01T13:55:55+00:00"
+        },
+        {
+            "name": "billing/customer-support",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "./nova-components/CustomerSupport",
+                "reference": "1d70731b5af9e7a83605bb7c010a8a63acb174ff"
+            },
+            "require": {
+                "illuminate/support": "^10.0|^11.0|^12.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel/nova": "^5.0",
+                "laravel/nova-devtool": "^1.7"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Billing\\CustomerSupport\\ToolServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Billing\\CustomerSupport\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "A Laravel Nova tool.",
+            "keywords": [
+                "laravel",
+                "nova"
+            ],
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "brick/math",
@@ -9581,7 +9622,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "billing/customer-support": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

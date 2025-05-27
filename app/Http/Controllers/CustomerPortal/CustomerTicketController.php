@@ -104,34 +104,69 @@ class CustomerTicketController extends Controller
      */
     public function store(CreateTicketRequest $request): JsonResponse
     {
-        $customer = $request->user()->userable;
+        try {
+            $customer = $request->user()->userable;
 
-        $ticket = Ticket::create([
-            'ticket_number' => 'TKT-' . strtoupper(Str::random(8)),
-            'customer_id' => $customer->id,
-            'subject' => $request->subject,
-            'description' => $request->description,
-            'status' => 'open',
-            'priority' => $request->priority ?? 'normal',
-            'category' => $request->category ?? 'general',
-            'source' => 'customer_portal',
-        ]);
+            // Log the incoming request for debugging
+            \Log::info('Ticket Creation Request', [
+                'user_id' => $request->user()->id,
+                'customer_id' => $customer->id,
+                'request_data' => $request->all(),
+            ]);
 
-        // Create initial customer response
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'user_id' => $request->user()->id,
-            'type' => 'customer',
-            'message' => $request->description,
-            'is_internal' => false,
-        ]);
+            // Handle both 'category' (direct) and 'department' (from Nova tool) fields
+            $category = $request->category ?? $request->department ?? 'general';
 
-        $ticket->load(['responses.user', 'responses.adminUser', 'assignedTo', 'department']);
+            // Map priority values (Nova tool uses 'medium', database uses 'normal')
+            $priority = $request->priority;
+            if ($priority === 'medium') {
+                $priority = 'normal';
+            }
 
-        return response()->json([
-            'data' => $ticket,
-            'message' => 'Support ticket created successfully.'
-        ], 201);
+            $ticket = Ticket::create([
+                'ticket_number' => 'TKT-' . strtoupper(Str::random(8)),
+                'customer_id' => $customer->id,
+                'subject' => $request->subject,
+                'description' => $request->description,
+                'status' => 'open',
+                'priority' => $priority ?? 'normal',
+                'category' => $category,
+                'source' => 'customer_portal',
+            ]);
+
+            // Create initial customer response
+            TicketResponse::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $request->user()->id,
+                'type' => 'customer',
+                'message' => $request->description,
+                'is_internal' => false,
+            ]);
+
+            $ticket->load(['responses.user', 'responses.adminUser', 'assignedTo', 'department']);
+
+            \Log::info('Ticket Created Successfully', [
+                'ticket_id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number,
+            ]);
+
+            return response()->json([
+                'data' => $ticket,
+                'message' => 'Support ticket created successfully.'
+            ], 201);
+
+        } catch (\Exception $e) {
+            \Log::error('Ticket Creation Failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to create ticket',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

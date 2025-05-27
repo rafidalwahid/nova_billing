@@ -194,7 +194,74 @@ class Ticket extends Model
         });
     }
 
-    // Business logic methods moved to TicketService
+    /**
+     * Get default department ID for a given category.
+     *
+     * @param string $category
+     * @return int|null
+     */
+    public static function getDefaultDepartmentForCategory(string $category): ?int
+    {
+        // Map categories to department names
+        $departmentMapping = [
+            self::CATEGORY_BILLING => 'Revenue Operations',
+            self::CATEGORY_TECHNICAL => 'IT Operations',
+            self::CATEGORY_SALES => 'Sales',
+            self::CATEGORY_GENERAL => 'Customer Experience',
+        ];
+
+        $departmentName = $departmentMapping[$category] ?? 'Customer Experience';
+
+        // Find department by name
+        $department = Department::where('name', $departmentName)->first();
+
+        return $department?->id;
+    }
+
+    /**
+     * Calculate SLA due date based on priority.
+     *
+     * @param string $priority
+     * @return \Carbon\Carbon
+     */
+    public static function calculateSLADueDate(string $priority): \Carbon\Carbon
+    {
+        $hours = match($priority) {
+            self::PRIORITY_URGENT => 2,   // 2 hours
+            self::PRIORITY_HIGH => 8,     // 8 hours
+            self::PRIORITY_NORMAL => 24,  // 24 hours
+            self::PRIORITY_LOW => 72,     // 72 hours
+            default => 24,
+        };
+
+        return now()->addHours($hours);
+    }
+
+    /**
+     * Update status timestamps when status changes.
+     *
+     * @param \App\Models\Ticket $ticket
+     * @return void
+     */
+    public static function updateStatusTimestamps(Ticket $ticket): void
+    {
+        switch ($ticket->status) {
+            case self::STATUS_RESOLVED:
+                if (!$ticket->resolved_at) {
+                    $ticket->resolved_at = now();
+                }
+                break;
+
+            case self::STATUS_CLOSED:
+                if (!$ticket->closed_at) {
+                    $ticket->closed_at = now();
+                }
+                if (!$ticket->resolved_at) {
+                    $ticket->resolved_at = now();
+                }
+                break;
+        }
+    }
 
     /**
      * Get tickets that are overdue based on SLA.

@@ -25,17 +25,24 @@ class CreateTicketRequest extends FormRequest
     {
         return [
             'subject' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'min:10'],
+            'description' => ['required', 'string', 'min:10', 'max:2000'],
             'priority' => [
                 'sometimes',
                 'required',
-                Rule::in(['low', 'normal', 'high', 'urgent'])
+                Rule::in(['low', 'medium', 'high', 'normal', 'urgent'])
             ],
             'category' => [
                 'sometimes',
                 'required',
                 Rule::in(['billing', 'technical', 'sales', 'general'])
             ],
+            // Nova tool specific fields
+            'department' => [
+                'sometimes',
+                'required',
+                Rule::in(['billing', 'technical', 'sales', 'general'])
+            ],
+            'email' => ['sometimes', 'required', 'email'],
         ];
     }
 
@@ -49,8 +56,12 @@ class CreateTicketRequest extends FormRequest
             'subject.max' => 'Subject cannot exceed 255 characters.',
             'description.required' => 'Description is required.',
             'description.min' => 'Description must be at least 10 characters.',
-            'priority.in' => 'Priority must be one of: low, normal, high, urgent.',
+            'description.max' => 'Description cannot exceed 2000 characters.',
+            'priority.in' => 'Priority must be one of: low, medium, high, normal, urgent.',
             'category.in' => 'Category must be one of: billing, technical, sales, general.',
+            'department.in' => 'Department must be one of: billing, technical, sales, general.',
+            'email.required' => 'Email is required.',
+            'email.email' => 'Please provide a valid email address.',
         ];
     }
 

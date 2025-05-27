@@ -12,7 +12,8 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/nova": "^5.7",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "billing/customer-support": "@dev"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -81,6 +82,10 @@
         {
             "type": "composer",
             "url": "https://nova.laravel.com"
+        },
+        {
+            "type": "path",
+            "url": "./nova-components/CustomerSupport"
         }
     ]
 }
