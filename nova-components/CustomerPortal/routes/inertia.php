@@ -22,17 +22,12 @@ Route::get('/', function (NovaRequest $request) {
 // Dashboard functionality moved to Nova dashboard
 // Route::get('/dashboard', ...) - REMOVED
 
-// Orders route
-Route::get('/orders', function (NovaRequest $request) {
-    return inertia('CustomerPortal');
-});
-
-// Invoices route
-Route::get('/invoices', function (NovaRequest $request) {
-    return inertia('CustomerPortal');
-});
-
 // Tickets route
 Route::get('/tickets', function (NovaRequest $request) {
+    return inertia('CustomerPortal');
+});
+
+// Profile route
+Route::get('/profile', function (NovaRequest $request) {
     return inertia('CustomerPortal');
 });

@@ -7,59 +7,43 @@ A comprehensive customer portal tool for Laravel Nova that provides customers wi
 ```
 nova-components/CustomerPortal/
 ├── resources/js/
-│   ├── components/           # Vue components for each section
-│   │   ├── Dashboard.vue     # Main dashboard with stats and recent activity
-│   │   ├── Orders.vue        # Customer orders management
-│   │   ├── Invoices.vue      # Invoice viewing and management
-│   │   ├── Services.vue      # Active services and subscriptions
+│   ├── components/           # Vue components for remaining sections
 │   │   ├── Support.vue       # Support ticket system
 │   │   └── Profile.vue       # Customer profile management
-│   ├── pages/
-│   │   └── Tool.vue          # Main tool component (router)
 │   ├── utils/
 │   │   └── helpers.js        # Shared utilities and API helpers
 │   └── tool.js               # Tool entry point
 ├── routes/
-│   └── api.php               # API routes for customer data
+│   ├── api.php               # API routes for customer data
+│   └── inertia.php           # Inertia routes for tool pages
 ├── src/
-│   └── CustomerPortal.php    # Main tool class
+│   ├── CustomerPortal.php    # Main tool class
+│   └── Http/Middleware/
+│       └── Authorize.php     # Authorization middleware
 └── README.md                 # This file
 ```
 
 ## 🧩 Components Overview
 
-### Dashboard.vue
-- **Purpose**: Main customer dashboard
-- **Features**: 
-  - Welcome card with customer info and status
-  - Stats grid (orders, services, spending, outstanding balance)
-  - Recent orders and invoices
-- **Props**: `dashboardData` (Object)
-
-### Orders.vue
-- **Purpose**: Customer order management
-- **Features**: Order history, tracking, details
-- **API**: `/nova-vendor/customer-portal/orders`
-
-### Invoices.vue
-- **Purpose**: Invoice viewing and payment
-- **Features**: Invoice list, payment options, downloads
-- **API**: `/nova-vendor/customer-portal/invoices`
-
-### Services.vue
-- **Purpose**: Active services management
-- **Features**: Service status, configuration, renewals
-- **API**: To be implemented
+**Note**: Orders, Invoices, and Services are now handled by Nova resources instead of Vue components.
 
 ### Support.vue
 - **Purpose**: Support ticket system
-- **Features**: Ticket creation, tracking, responses
+- **Features**:
+  - Complete ticket management with filtering and search
+  - Ticket creation, tracking, and responses
+  - Status and priority management
+  - Pagination and real-time updates
 - **API**: `/nova-vendor/customer-portal/tickets`
 
 ### Profile.vue
 - **Purpose**: Customer profile management
-- **Features**: Profile editing, password changes, preferences
-- **API**: To be implemented
+- **Features**:
+  - Complete profile editing with form validation
+  - Secure password change functionality
+  - Account information display
+  - Real-time form updates
+- **API**: `/nova-vendor/customer-portal/profile`
 
 ## 🛠 Utilities (helpers.js)
 

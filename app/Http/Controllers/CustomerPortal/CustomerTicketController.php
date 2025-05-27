@@ -20,10 +20,45 @@ class CustomerTicketController extends Controller
     {
         $customer = $request->user()->userable;
 
-        $tickets = $customer->tickets()
-            ->with(['responses.user', 'responses.adminUser', 'assignedTo', 'department'])
-            ->latest()
-            ->paginate(10);
+        $query = $customer->tickets()
+            ->with(['responses.user', 'responses.adminUser', 'assignedTo', 'department']);
+
+        // Apply search filter
+        if ($request->has('search') && $request->search) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('ticket_number', 'like', "%{$searchTerm}%")
+                  ->orWhere('subject', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Apply status filter
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        // Apply priority filter
+        if ($request->has('priority') && $request->priority) {
+            $query->where('priority', $request->priority);
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+
+        // Validate sort fields
+        $allowedSortFields = ['created_at', 'updated_at', 'subject', 'status', 'priority', 'last_response_at'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortDirection);
+        } else {
+            $query->latest();
+        }
+
+        // Get per page limit
+        $perPage = min($request->get('per_page', 10), 50); // Max 50 per page
+
+        $tickets = $query->paginate($perPage);
 
         return response()->json([
             'data' => $tickets->items(),

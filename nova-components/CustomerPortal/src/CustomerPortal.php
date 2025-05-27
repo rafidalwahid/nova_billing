@@ -26,12 +26,6 @@ class CustomerPortal extends Tool
         return MenuSection::make('Customer Portal', [
             MenuItem::make('Dashboard')
                 ->path('/customer-portal/dashboard'),
-            MenuItem::make('Orders')
-                ->path('/customer-portal/orders'),
-            MenuItem::make('Invoices')
-                ->path('/customer-portal/invoices'),
-            MenuItem::make('Services')
-                ->path('/customer-portal/services'),
             MenuItem::make('Support')
                 ->path('/customer-portal/tickets'),
             MenuItem::make('Profile')

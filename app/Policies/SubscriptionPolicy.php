@@ -13,6 +13,12 @@ class SubscriptionPolicy
      */
     public function viewAny(User $user): bool
     {
+        // Customers can view their own subscriptions
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'subscription_management.view');
     }
 
@@ -21,6 +27,12 @@ class SubscriptionPolicy
      */
     public function view(User $user, Subscription $subscription): bool
     {
+        // Customers can only view their own subscriptions
+        if ($user->isCustomer()) {
+            return $subscription->customer_id === $user->userable_id;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'subscription_management.view');
     }
 

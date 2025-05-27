@@ -58,6 +58,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\Transaction::class,
             \App\Nova\Subscription::class,
             \App\Nova\SubscriptionItem::class,
+            \App\Nova\CustomerSubscriptionItem::class, // Customer-facing subscription item resource
             \App\Nova\Ticket::class,
             \App\Nova\TicketResponse::class,
         ]);
@@ -74,7 +75,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     \Laravel\Nova\Menu\MenuSection::make('My Account', [
                         \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerOrder::class),
                         \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerInvoice::class),
-                        \Laravel\Nova\Menu\MenuItem::externalLink('My Services', '/nova/customer-portal/services'),
                         \Laravel\Nova\Menu\MenuItem::externalLink('Support', '/nova/customer-portal/tickets'),
                         \Laravel\Nova\Menu\MenuItem::externalLink('My Profile', '/nova/customer-portal/profile'),
                     ])->icon('user-circle')->collapsible(),
