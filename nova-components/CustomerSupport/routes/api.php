@@ -16,33 +16,21 @@ use App\Http\Controllers\CustomerPortal\CustomerTicketController;
 */
 
 // Get customer support tickets - Connect to real database
-Route::get('/tickets', [CustomerTicketController::class, 'index']);
+Route::get('/tickets', [CustomerTicketController::class, 'index'])
+    ->middleware('throttle:60,1'); // 60 requests per minute
 
 // Get single ticket details - Connect to real database
-Route::get('/tickets/{id}', [CustomerTicketController::class, 'show']);
+Route::get('/tickets/{id}', [CustomerTicketController::class, 'show'])
+    ->middleware('throttle:120,1'); // 120 requests per minute
 
-// Create new ticket - Connect to real database
-Route::post('/tickets', [CustomerTicketController::class, 'store']);
+// Create new ticket - Connect to real database (rate limited)
+Route::post('/tickets', [CustomerTicketController::class, 'store'])
+    ->middleware('throttle:5,1'); // 5 ticket creations per minute
 
-// Debug route to test API
-Route::get('/debug', function (Request $request) {
-    $user = $request->user();
-    $customer = $user->userable;
+// Add response to ticket - Connect to real database (rate limited)
+Route::post('/tickets/{id}/responses', [CustomerTicketController::class, 'addResponse'])
+    ->middleware('throttle:10,1'); // 10 responses per minute
 
-    $tickets = $customer->tickets()->get();
-
-    return response()->json([
-        'debug' => true,
-        'user' => [
-            'id' => $user->id,
-            'email' => $user->email,
-            'is_customer' => $user->isCustomer(),
-        ],
-        'customer' => [
-            'id' => $customer->id,
-            'name' => $customer->full_name,
-        ],
-        'tickets_count' => $tickets->count(),
-        'tickets' => $tickets->toArray(),
-    ]);
-});
+// Upload attachment to ticket - Connect to real database (rate limited)
+Route::post('/tickets/{id}/attachments', [CustomerTicketController::class, 'uploadAttachment'])
+    ->middleware('throttle:5,1'); // 5 uploads per minute

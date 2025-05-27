@@ -5,220 +5,284 @@ namespace App\Http\Controllers\CustomerPortal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerPortal\CreateTicketRequest;
 use App\Http\Requests\CustomerPortal\AddTicketResponseRequest;
-use App\Models\Ticket;
-use App\Models\TicketResponse;
+use App\Services\TicketService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
+
+/**
+ * Customer Ticket Controller - Optimized Version
+ *
+ * Handles customer-facing ticket operations with proper separation of concerns,
+ * comprehensive error handling, and security best practices.
+ */
 class CustomerTicketController extends Controller
 {
     /**
-     * Get customer support tickets.
+     * The ticket service instance.
+     */
+    protected TicketService $ticketService;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @param TicketService $ticketService
+     */
+    public function __construct(TicketService $ticketService)
+    {
+        $this->ticketService = $ticketService;
+    }
+
+    /**
+     * Get customer support tickets with filtering and pagination.
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
-        $customer = $request->user()->userable;
+        try {
+            $customer = $request->user()->userable;
 
-        $query = $customer->tickets()
-            ->with(['responses.user', 'responses.adminUser', 'assignedTo', 'department']);
+            // Build filters from request
+            $filters = $this->buildFiltersFromRequest($request);
 
-        // Apply search filter
-        if ($request->has('search') && $request->search) {
-            $searchTerm = $request->search;
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('ticket_number', 'like', "%{$searchTerm}%")
-                  ->orWhere('subject', 'like', "%{$searchTerm}%")
-                  ->orWhere('description', 'like', "%{$searchTerm}%");
-            });
+            // Get per page limit (max 50 to prevent abuse)
+            $perPage = min($request->get('per_page', 10), 50);
+
+            // Get paginated tickets using service
+            $tickets = $this->ticketService->getCustomerTickets($customer, $filters, $perPage);
+
+            return response()->json([
+                'data' => $tickets->items(),
+                'meta' => [
+                    'current_page' => $tickets->currentPage(),
+                    'last_page' => $tickets->lastPage(),
+                    'per_page' => $tickets->perPage(),
+                    'total' => $tickets->total(),
+                ],
+                'links' => [
+                    'first' => $tickets->url(1),
+                    'last' => $tickets->url($tickets->lastPage()),
+                    'prev' => $tickets->previousPageUrl(),
+                    'next' => $tickets->nextPageUrl(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve customer tickets', [
+                'user_id' => $request->user()->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Unable to retrieve tickets at this time.',
+                'message' => 'Please try again later or contact support if the problem persists.'
+            ], 500);
         }
-
-        // Apply status filter
-        if ($request->has('status') && $request->status) {
-            $query->where('status', $request->status);
-        }
-
-        // Apply priority filter
-        if ($request->has('priority') && $request->priority) {
-            $query->where('priority', $request->priority);
-        }
-
-        // Apply sorting
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-
-        // Validate sort fields
-        $allowedSortFields = ['created_at', 'updated_at', 'subject', 'status', 'priority', 'last_response_at'];
-        if (in_array($sortBy, $allowedSortFields)) {
-            $query->orderBy($sortBy, $sortDirection);
-        } else {
-            $query->latest();
-        }
-
-        // Get per page limit
-        $perPage = min($request->get('per_page', 10), 50); // Max 50 per page
-
-        $tickets = $query->paginate($perPage);
-
-        return response()->json([
-            'data' => $tickets->items(),
-            'meta' => [
-                'current_page' => $tickets->currentPage(),
-                'last_page' => $tickets->lastPage(),
-                'per_page' => $tickets->perPage(),
-                'total' => $tickets->total(),
-            ],
-            'links' => [
-                'first' => $tickets->url(1),
-                'last' => $tickets->url($tickets->lastPage()),
-                'prev' => $tickets->previousPageUrl(),
-                'next' => $tickets->nextPageUrl(),
-            ]
-        ]);
     }
 
     /**
      * Get specific ticket details with responses.
+     *
+     * @param Request $request
+     * @param int $ticketId
+     * @return JsonResponse
      */
     public function show(Request $request, int $ticketId): JsonResponse
     {
-        $customer = $request->user()->userable;
+        try {
+            $customer = $request->user()->userable;
 
-        $ticket = $customer->tickets()
-            ->with([
-                'responses.user',
-                'responses.adminUser',
-                'assignedTo',
-                'department',
-                'customer'
-            ])
-            ->findOrFail($ticketId);
+            $ticket = $this->ticketService->getCustomerTicket($customer, $ticketId);
 
-        return response()->json([
-            'data' => $ticket
-        ]);
+            return response()->json([
+                'data' => $ticket
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Ticket not found.',
+                'message' => 'The requested ticket does not exist or you do not have permission to view it.'
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve customer ticket', [
+                'user_id' => $request->user()->id,
+                'ticket_id' => $ticketId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Unable to retrieve ticket at this time.',
+                'message' => 'Please try again later or contact support if the problem persists.'
+            ], 500);
+        }
     }
 
     /**
      * Create a new support ticket.
+     *
+     * @param CreateTicketRequest $request
+     * @return JsonResponse
      */
     public function store(CreateTicketRequest $request): JsonResponse
     {
         try {
             $customer = $request->user()->userable;
+            $user = $request->user();
 
-            // Log the incoming request for debugging
-            \Log::info('Ticket Creation Request', [
-                'user_id' => $request->user()->id,
-                'customer_id' => $customer->id,
-                'request_data' => $request->all(),
-            ]);
-
-            // Handle both 'category' (direct) and 'department' (from Nova tool) fields
-            $category = $request->category ?? $request->department ?? 'general';
-
-            // Map priority values (Nova tool uses 'medium', database uses 'normal')
-            $priority = $request->priority;
-            if ($priority === 'medium') {
-                $priority = 'normal';
-            }
-
-            $ticket = Ticket::create([
-                'ticket_number' => 'TKT-' . strtoupper(Str::random(8)),
-                'customer_id' => $customer->id,
-                'subject' => $request->subject,
-                'description' => $request->description,
-                'status' => 'open',
-                'priority' => $priority ?? 'normal',
-                'category' => $category,
-                'source' => 'customer_portal',
-            ]);
-
-            // Create initial customer response
-            TicketResponse::create([
-                'ticket_id' => $ticket->id,
-                'user_id' => $request->user()->id,
-                'type' => 'customer',
-                'message' => $request->description,
-                'is_internal' => false,
-            ]);
-
-            $ticket->load(['responses.user', 'responses.adminUser', 'assignedTo', 'department']);
-
-            \Log::info('Ticket Created Successfully', [
-                'ticket_id' => $ticket->id,
-                'ticket_number' => $ticket->ticket_number,
-            ]);
+            // Create ticket using service
+            $ticket = $this->ticketService->createCustomerTicket(
+                $customer,
+                $user,
+                $request->validated()
+            );
 
             return response()->json([
                 'data' => $ticket,
                 'message' => 'Support ticket created successfully.'
             ], 201);
 
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'error' => 'Invalid ticket data.',
+                'message' => $e->getMessage()
+            ], 422);
+
         } catch (\Exception $e) {
-            \Log::error('Ticket Creation Failed', [
+            Log::error('Failed to create customer ticket', [
+                'user_id' => $request->user()->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all(),
+                'request_data' => $request->validated(),
             ]);
 
             return response()->json([
-                'error' => 'Failed to create ticket',
-                'message' => $e->getMessage(),
+                'error' => 'Failed to create ticket.',
+                'message' => 'Please try again later or contact support if the problem persists.'
             ], 500);
         }
     }
 
     /**
      * Add a response to an existing ticket.
+     *
+     * @param AddTicketResponseRequest $request
+     * @param int $ticketId
+     * @return JsonResponse
      */
     public function addResponse(AddTicketResponseRequest $request, int $ticketId): JsonResponse
     {
-        $customer = $request->user()->userable;
+        try {
+            $customer = $request->user()->userable;
+            $user = $request->user();
 
-        $ticket = $customer->tickets()->findOrFail($ticketId);
+            // Get ticket with authorization check
+            $ticket = $this->ticketService->getCustomerTicket($customer, $ticketId);
 
-        // Don't allow responses to closed tickets
-        if ($ticket->status === 'closed') {
+            // Add response using service
+            $response = $this->ticketService->addCustomerResponse(
+                $ticket,
+                $user,
+                $request->validated()['message']
+            );
+
             return response()->json([
-                'message' => 'Cannot add responses to closed tickets.'
+                'data' => $response,
+                'message' => 'Response added successfully.'
+            ], 201);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Ticket not found.',
+                'message' => 'The requested ticket does not exist or you do not have permission to access it.'
+            ], 404);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'error' => 'Cannot add response.',
+                'message' => $e->getMessage()
             ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to add ticket response', [
+                'user_id' => $request->user()->id,
+                'ticket_id' => $ticketId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to add response.',
+                'message' => 'Please try again later or contact support if the problem persists.'
+            ], 500);
         }
-
-        $response = TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'user_id' => $request->user()->id,
-            'type' => 'customer',
-            'message' => $request->message,
-            'is_internal' => false,
-        ]);
-
-        // Update ticket status if it was resolved
-        if ($ticket->status === 'resolved') {
-            $ticket->update(['status' => 'in_progress']);
-        }
-
-        $response->load(['user', 'adminUser']);
-
-        return response()->json([
-            'data' => $response,
-            'message' => 'Response added successfully.'
-        ], 201);
     }
 
     /**
      * Upload attachment for a ticket (placeholder for future implementation).
+     *
+     * @param Request $request
+     * @param int $ticketId
+     * @return JsonResponse
      */
     public function uploadAttachment(Request $request, int $ticketId): JsonResponse
     {
-        $customer = $request->user()->userable;
+        try {
+            $customer = $request->user()->userable;
 
-        $ticket = $customer->tickets()->findOrFail($ticketId);
+            // Verify ticket exists and customer has access
+            $ticket = $this->ticketService->getCustomerTicket($customer, $ticketId);
 
-        // TODO: Implement file upload functionality
-        return response()->json([
-            'message' => 'File attachment functionality will be implemented in a future update.',
-            'ticket_number' => $ticket->ticket_number
-        ], 501); // 501 Not Implemented
+            // File upload functionality placeholder - ready for future implementation
+            return response()->json([
+                'message' => 'File attachment functionality will be implemented in a future update.',
+                'ticket_number' => $ticket->ticket_number,
+                'supported_formats' => ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png'],
+                'max_size' => '10MB'
+            ], 501); // 501 Not Implemented
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Ticket not found.',
+                'message' => 'The requested ticket does not exist or you do not have permission to access it.'
+            ], 404);
+        }
+    }
+
+    /**
+     * Build filters array from request parameters.
+     *
+     * @param Request $request
+     * @return array
+     */
+    private function buildFiltersFromRequest(Request $request): array
+    {
+        $filters = [];
+
+        // Search filter
+        if ($request->filled('search')) {
+            $filters['search'] = $request->get('search');
+        }
+
+        // Status filter
+        if ($request->filled('status')) {
+            $filters['status'] = $request->get('status');
+        }
+
+        // Category filter
+        if ($request->filled('category')) {
+            $filters['category'] = $request->get('category');
+        }
+
+        // Priority filter
+        if ($request->filled('priority')) {
+            $filters['priority'] = $request->get('priority');
+        }
+
+        return $filters;
     }
 }

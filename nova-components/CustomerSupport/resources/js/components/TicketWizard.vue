@@ -333,44 +333,17 @@ export default {
           email: this.formData.email
         })
 
-        console.log('Ticket created successfully:', response.data)
-
         // Show success message
         const ticketNumber = response.data.data?.ticket_number || 'Unknown'
-        alert(`Ticket ${ticketNumber} created successfully! You will receive a confirmation email shortly.`)
+        this.showSuccessMessage(`Ticket ${ticketNumber} created successfully! You will receive a confirmation email shortly.`)
 
         this.$emit('ticketCreated', response.data.data)
         this.closeWizard()
 
       } catch (error) {
-        console.error('Error creating ticket:', error)
-        console.error('Error response:', error.response)
-
-        // Show detailed error message
-        let errorMessage = 'Failed to create ticket. Please try again.'
-
-        if (error.response?.status === 401) {
-          errorMessage = 'Authentication required. Please log in again.'
-        } else if (error.response?.status === 403) {
-          errorMessage = 'Access denied. You do not have permission to create tickets.'
-        } else if (error.response?.status === 422) {
-          // Validation errors
-          const validationErrors = error.response?.data?.errors
-          if (validationErrors) {
-            const errorList = Object.values(validationErrors).flat().join('\n')
-            errorMessage = `Validation errors:\n${errorList}`
-          } else {
-            errorMessage = 'Please check your input. Some fields may be invalid.'
-          }
-        } else if (error.response?.status === 500) {
-          // Server error
-          const serverMessage = error.response?.data?.message
-          errorMessage = serverMessage ? `Server error: ${serverMessage}` : 'Internal server error occurred.'
-        } else if (error.response?.data?.message) {
-          errorMessage = error.response.data.message
-        }
-
-        alert(errorMessage)
+        // Show user-friendly error message
+        const errorMessage = this.getErrorMessage(error)
+        this.showErrorMessage(errorMessage)
       } finally {
         this.isSubmitting = false
       }
@@ -388,6 +361,58 @@ export default {
         'high': 'High Priority'
       }
       return priorities[value] || value
+    },
+
+    /**
+     * Get user-friendly error message from API response.
+     */
+    getErrorMessage(error) {
+      if (error.response?.status === 401) {
+        return 'Authentication required. Please log in again.'
+      } else if (error.response?.status === 403) {
+        return 'Access denied. You do not have permission to create tickets.'
+      } else if (error.response?.status === 422) {
+        // Validation errors
+        const validationErrors = error.response?.data?.errors
+        if (validationErrors) {
+          const errorList = Object.values(validationErrors).flat().join('\n')
+          return `Validation errors:\n${errorList}`
+        } else {
+          return 'Please check your input. Some fields may be invalid.'
+        }
+      } else if (error.response?.status === 429) {
+        return 'Too many requests. Please wait a moment before trying again.'
+      } else if (error.response?.status === 500) {
+        // Server error
+        const serverMessage = error.response?.data?.message
+        return serverMessage ? `Server error: ${serverMessage}` : 'Internal server error occurred.'
+      } else if (error.response?.data?.message) {
+        return error.response.data.message
+      }
+
+      return 'Failed to create ticket. Please try again.'
+    },
+
+    /**
+     * Show success message to user.
+     * Uses Nova's built-in notification system.
+     */
+    showSuccessMessage(message) {
+      this.$toasted.success(message, {
+        duration: 5000,
+        position: 'top-right'
+      })
+    },
+
+    /**
+     * Show error message to user.
+     * Uses Nova's built-in notification system.
+     */
+    showErrorMessage(message) {
+      this.$toasted.error(message, {
+        duration: 8000,
+        position: 'top-right'
+      })
     }
   }
 }

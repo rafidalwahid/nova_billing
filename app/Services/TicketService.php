@@ -5,11 +5,129 @@ namespace App\Services;
 use App\Models\Ticket;
 use App\Models\TicketResponse;
 use App\Models\AdminUser;
+use App\Models\Customer;
+use App\Models\User;
 use App\Events\TicketStatusChanged;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class TicketService
 {
+    /**
+     * Create a new customer ticket with proper validation and business logic.
+     *
+     * @param Customer $customer
+     * @param User $user
+     * @param array $data
+     * @return Ticket
+     * @throws \InvalidArgumentException
+     */
+    public function createCustomerTicket(Customer $customer, User $user, array $data): Ticket
+    {
+        // Validate and normalize input data
+        $normalizedData = $this->normalizeTicketData($data);
+
+        // Generate unique ticket number
+        $ticketNumber = $this->generateTicketNumber();
+
+        // Create ticket with normalized data
+        $ticket = Ticket::create([
+            'ticket_number' => $ticketNumber,
+            'customer_id' => $customer->id,
+            'subject' => $normalizedData['subject'],
+            'description' => $normalizedData['description'],
+            'status' => Ticket::STATUS_OPEN,
+            'priority' => $normalizedData['priority'],
+            'category' => $normalizedData['category'],
+            'source' => 'customer_portal',
+        ]);
+
+        // Create initial customer response
+        $this->createInitialResponse($ticket, $user, $normalizedData['description']);
+
+        // Log ticket creation
+        $this->logTicketCreation($ticket, $customer, $user);
+
+        return $ticket->load(['responses.user', 'responses.adminUser', 'assignedTo', 'department']);
+    }
+
+    /**
+     * Get paginated tickets for a customer with filters and eager loading.
+     *
+     * @param Customer $customer
+     * @param array $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getCustomerTickets(Customer $customer, array $filters = [], int $perPage = 10): LengthAwarePaginator
+    {
+        $query = $this->buildCustomerTicketsQuery($customer, $filters);
+
+        // Limit per page to prevent abuse
+        $perPage = min($perPage, 50);
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Get a specific customer ticket with authorization check.
+     *
+     * @param Customer $customer
+     * @param int $ticketId
+     * @return Ticket
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function getCustomerTicket(Customer $customer, int $ticketId): Ticket
+    {
+        return $customer->tickets()
+            ->with([
+                'responses.user',
+                'responses.adminUser',
+                'assignedTo',
+                'department',
+                'customer'
+            ])
+            ->findOrFail($ticketId);
+    }
+
+    /**
+     * Add a customer response to a ticket.
+     *
+     * @param Ticket $ticket
+     * @param User $user
+     * @param string $message
+     * @return TicketResponse
+     * @throws \InvalidArgumentException
+     */
+    public function addCustomerResponse(Ticket $ticket, User $user, string $message): TicketResponse
+    {
+        // Validate ticket can receive responses
+        if ($ticket->status === Ticket::STATUS_CLOSED) {
+            throw new \InvalidArgumentException('Cannot add responses to closed tickets.');
+        }
+
+        // Create response
+        $response = TicketResponse::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'type' => 'customer',
+            'message' => trim($message),
+            'is_internal' => false,
+        ]);
+
+        // Update ticket status if it was resolved
+        if ($ticket->status === Ticket::STATUS_RESOLVED) {
+            $ticket->update(['status' => Ticket::STATUS_IN_PROGRESS]);
+        }
+
+        // Log response addition
+        $this->logCustomerResponseAdded($ticket, $user, 'customer');
+
+        return $response->load(['user', 'adminUser']);
+    }
+
     /**
      * Change ticket status with validation and logging.
      */
@@ -274,6 +392,159 @@ class TicketService
 
         $department = \App\Models\Department::where('name', $departmentName)->first();
         return $department ? $department->id : null;
+    }
+
+    /**
+     * Normalize and validate ticket data from request.
+     *
+     * @param array $data
+     * @return array
+     * @throws \InvalidArgumentException
+     */
+    private function normalizeTicketData(array $data): array
+    {
+        // Handle both 'category' (direct) and 'department' (from Nova tool) fields
+        $category = $data['category'] ?? $data['department'] ?? 'general';
+
+        // Map priority values (Nova tool uses 'medium', database uses 'normal')
+        $priority = $data['priority'] ?? 'normal';
+        if ($priority === 'medium') {
+            $priority = 'normal';
+        }
+
+        // Validate category
+        if (!in_array($category, array_keys(Ticket::getCategories()))) {
+            throw new \InvalidArgumentException("Invalid category: {$category}");
+        }
+
+        // Validate priority
+        if (!in_array($priority, array_keys(Ticket::getPriorities()))) {
+            throw new \InvalidArgumentException("Invalid priority: {$priority}");
+        }
+
+        return [
+            'subject' => trim($data['subject']),
+            'description' => trim($data['description']),
+            'category' => $category,
+            'priority' => $priority,
+        ];
+    }
+
+    /**
+     * Generate a unique ticket number.
+     *
+     * @return string
+     */
+    private function generateTicketNumber(): string
+    {
+        do {
+            $ticketNumber = 'TKT-' . strtoupper(Str::random(8));
+        } while (Ticket::where('ticket_number', $ticketNumber)->exists());
+
+        return $ticketNumber;
+    }
+
+    /**
+     * Create initial customer response for a ticket.
+     *
+     * @param Ticket $ticket
+     * @param User $user
+     * @param string $description
+     * @return TicketResponse
+     */
+    private function createInitialResponse(Ticket $ticket, User $user, string $description): TicketResponse
+    {
+        return TicketResponse::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'type' => 'customer',
+            'message' => $description,
+            'is_internal' => false,
+        ]);
+    }
+
+    /**
+     * Build query for customer tickets with filters.
+     *
+     * @param Customer $customer
+     * @param array $filters
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany|\Illuminate\Database\Eloquent\Builder
+     */
+    private function buildCustomerTicketsQuery(Customer $customer, array $filters)
+    {
+        $query = $customer->tickets()
+            ->with(['responses.user', 'responses.adminUser', 'assignedTo', 'department'])
+            ->orderBy('created_at', 'desc');
+
+        // Apply search filter
+        if (!empty($filters['search'])) {
+            $searchTerm = $filters['search'];
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('ticket_number', 'like', "%{$searchTerm}%")
+                  ->orWhere('subject', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Apply status filter
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        // Apply category filter
+        if (!empty($filters['category'])) {
+            $query->where('category', $filters['category']);
+        }
+
+        // Apply priority filter
+        if (!empty($filters['priority'])) {
+            $query->where('priority', $filters['priority']);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Log ticket creation for audit trail.
+     *
+     * @param Ticket $ticket
+     * @param Customer $customer
+     * @param User $user
+     * @return void
+     */
+    private function logTicketCreation(Ticket $ticket, Customer $customer, User $user): void
+    {
+        Log::info('Customer Ticket Created', [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'customer_id' => $customer->id,
+            'customer_name' => $customer->full_name,
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'subject' => $ticket->subject,
+            'category' => $ticket->category,
+            'priority' => $ticket->priority,
+            'source' => $ticket->source,
+        ]);
+    }
+
+    /**
+     * Log customer response addition for audit trail.
+     *
+     * @param Ticket $ticket
+     * @param User $user
+     * @param string $type
+     * @return void
+     */
+    private function logCustomerResponseAdded(Ticket $ticket, User $user, string $type): void
+    {
+        Log::info('Ticket Response Added', [
+            'ticket_id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'response_type' => $type,
+        ]);
     }
 
     /**

@@ -222,7 +222,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     submitTicket: function submitTicket() {
       var _this = this;
       return _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-        var _response$data$data, response, ticketNumber, _error$response, _error$response2, _error$response3, _error$response5, _error$response7, errorMessage, _error$response4, validationErrors, errorList, _error$response6, serverMessage;
+        var _response$data$data, response, ticketNumber, errorMessage;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
@@ -238,53 +238,28 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               });
             case 4:
               response = _context.sent;
-              console.log('Ticket created successfully:', response.data);
-
               // Show success message
               ticketNumber = ((_response$data$data = response.data.data) === null || _response$data$data === void 0 ? void 0 : _response$data$data.ticket_number) || 'Unknown';
-              alert("Ticket ".concat(ticketNumber, " created successfully! You will receive a confirmation email shortly."));
+              _this.showSuccessMessage("Ticket ".concat(ticketNumber, " created successfully! You will receive a confirmation email shortly."));
               _this.$emit('ticketCreated', response.data.data);
               _this.closeWizard();
-              _context.next = 19;
+              _context.next = 15;
               break;
-            case 12:
-              _context.prev = 12;
+            case 11:
+              _context.prev = 11;
               _context.t0 = _context["catch"](1);
-              console.error('Error creating ticket:', _context.t0);
-              console.error('Error response:', _context.t0.response);
-
-              // Show detailed error message
-              errorMessage = 'Failed to create ticket. Please try again.';
-              if (((_error$response = _context.t0.response) === null || _error$response === void 0 ? void 0 : _error$response.status) === 401) {
-                errorMessage = 'Authentication required. Please log in again.';
-              } else if (((_error$response2 = _context.t0.response) === null || _error$response2 === void 0 ? void 0 : _error$response2.status) === 403) {
-                errorMessage = 'Access denied. You do not have permission to create tickets.';
-              } else if (((_error$response3 = _context.t0.response) === null || _error$response3 === void 0 ? void 0 : _error$response3.status) === 422) {
-                // Validation errors
-                validationErrors = (_error$response4 = _context.t0.response) === null || _error$response4 === void 0 || (_error$response4 = _error$response4.data) === null || _error$response4 === void 0 ? void 0 : _error$response4.errors;
-                if (validationErrors) {
-                  errorList = Object.values(validationErrors).flat().join('\n');
-                  errorMessage = "Validation errors:\n".concat(errorList);
-                } else {
-                  errorMessage = 'Please check your input. Some fields may be invalid.';
-                }
-              } else if (((_error$response5 = _context.t0.response) === null || _error$response5 === void 0 ? void 0 : _error$response5.status) === 500) {
-                // Server error
-                serverMessage = (_error$response6 = _context.t0.response) === null || _error$response6 === void 0 || (_error$response6 = _error$response6.data) === null || _error$response6 === void 0 ? void 0 : _error$response6.message;
-                errorMessage = serverMessage ? "Server error: ".concat(serverMessage) : 'Internal server error occurred.';
-              } else if ((_error$response7 = _context.t0.response) !== null && _error$response7 !== void 0 && (_error$response7 = _error$response7.data) !== null && _error$response7 !== void 0 && _error$response7.message) {
-                errorMessage = _context.t0.response.data.message;
-              }
-              alert(errorMessage);
-            case 19:
-              _context.prev = 19;
+              // Show user-friendly error message
+              errorMessage = _this.getErrorMessage(_context.t0);
+              _this.showErrorMessage(errorMessage);
+            case 15:
+              _context.prev = 15;
               _this.isSubmitting = false;
-              return _context.finish(19);
-            case 22:
+              return _context.finish(15);
+            case 18:
             case "end":
               return _context.stop();
           }
-        }, _callee, null, [[1, 12, 19, 22]]);
+        }, _callee, null, [[1, 11, 15, 18]]);
       }))();
     },
     getDepartmentName: function getDepartmentName(value) {
@@ -300,6 +275,57 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
         'high': 'High Priority'
       };
       return priorities[value] || value;
+    },
+    /**
+     * Get user-friendly error message from API response.
+     */
+    getErrorMessage: function getErrorMessage(error) {
+      var _error$response, _error$response2, _error$response3, _error$response5, _error$response6, _error$response8;
+      if (((_error$response = error.response) === null || _error$response === void 0 ? void 0 : _error$response.status) === 401) {
+        return 'Authentication required. Please log in again.';
+      } else if (((_error$response2 = error.response) === null || _error$response2 === void 0 ? void 0 : _error$response2.status) === 403) {
+        return 'Access denied. You do not have permission to create tickets.';
+      } else if (((_error$response3 = error.response) === null || _error$response3 === void 0 ? void 0 : _error$response3.status) === 422) {
+        var _error$response4;
+        // Validation errors
+        var validationErrors = (_error$response4 = error.response) === null || _error$response4 === void 0 || (_error$response4 = _error$response4.data) === null || _error$response4 === void 0 ? void 0 : _error$response4.errors;
+        if (validationErrors) {
+          var errorList = Object.values(validationErrors).flat().join('\n');
+          return "Validation errors:\n".concat(errorList);
+        } else {
+          return 'Please check your input. Some fields may be invalid.';
+        }
+      } else if (((_error$response5 = error.response) === null || _error$response5 === void 0 ? void 0 : _error$response5.status) === 429) {
+        return 'Too many requests. Please wait a moment before trying again.';
+      } else if (((_error$response6 = error.response) === null || _error$response6 === void 0 ? void 0 : _error$response6.status) === 500) {
+        var _error$response7;
+        // Server error
+        var serverMessage = (_error$response7 = error.response) === null || _error$response7 === void 0 || (_error$response7 = _error$response7.data) === null || _error$response7 === void 0 ? void 0 : _error$response7.message;
+        return serverMessage ? "Server error: ".concat(serverMessage) : 'Internal server error occurred.';
+      } else if ((_error$response8 = error.response) !== null && _error$response8 !== void 0 && (_error$response8 = _error$response8.data) !== null && _error$response8 !== void 0 && _error$response8.message) {
+        return error.response.data.message;
+      }
+      return 'Failed to create ticket. Please try again.';
+    },
+    /**
+     * Show success message to user.
+     * Uses Nova's built-in notification system.
+     */
+    showSuccessMessage: function showSuccessMessage(message) {
+      this.$toasted.success(message, {
+        duration: 5000,
+        position: 'top-right'
+      });
+    },
+    /**
+     * Show error message to user.
+     * Uses Nova's built-in notification system.
+     */
+    showErrorMessage: function showErrorMessage(message) {
+      this.$toasted.error(message, {
+        duration: 8000,
+        position: 'top-right'
+      });
     }
   }
 });
