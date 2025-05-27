@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a8ff4e91498dc2d4e9c47337ba1cb679",
+    "content-hash": "c2d37757e85e9de26ada3fdf9dcd6ec8",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -59,47 +59,6 @@
                 "source": "https://github.com/Bacon/BaconQrCode/tree/v3.0.1"
             },
             "time": "2024-10-01T13:55:55+00:00"
-        },
-        {
-            "name": "billing/customer-portal",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "./nova-components/CustomerPortal",
-                "reference": "6dee4313816e921d19fd21fb53c5743c9273b0e7"
-            },
-            "require": {
-                "illuminate/support": "^10.0|^11.0|^12.0",
-                "php": "^8.1"
-            },
-            "require-dev": {
-                "laravel/nova": "^5.0",
-                "laravel/nova-devtool": "^1.7"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Billing\\CustomerPortal\\ToolServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Billing\\CustomerPortal\\": "src/"
-                }
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "A Laravel Nova tool.",
-            "keywords": [
-                "laravel",
-                "nova"
-            ],
-            "transport-options": {
-                "relative": true
-            }
         },
         {
             "name": "brick/math",
@@ -9622,9 +9581,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "billing/customer-portal": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

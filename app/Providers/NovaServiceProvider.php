@@ -75,8 +75,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     \Laravel\Nova\Menu\MenuSection::make('My Account', [
                         \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerOrder::class),
                         \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerInvoice::class),
-                        \Laravel\Nova\Menu\MenuItem::externalLink('Support', '/nova/customer-portal/tickets'),
-                        \Laravel\Nova\Menu\MenuItem::externalLink('My Profile', '/nova/customer-portal/profile'),
                     ])->icon('user-circle')->collapsible(),
                 ];
             }
@@ -180,9 +178,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     public function tools(): array
     {
         return [
-            // Customer portal functionality now handled by Nova dashboard and resources
-            // Commented out Vue-based customer portal:
-            // new \Billing\CustomerPortal\CustomerPortal;
+            // No tools registered
         ];
     }
 
