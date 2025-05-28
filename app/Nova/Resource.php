@@ -56,6 +56,11 @@ abstract class Resource extends NovaResource
             return false;
         }
 
+        // Additional security: Check if user account is active
+        if (!static::isUserAccountActive($user)) {
+            return false;
+        }
+
         // Customers can only access specific customer-facing resources
         if ($user->isCustomer()) {
             $allowedCustomerResources = [
@@ -77,6 +82,41 @@ abstract class Resource extends NovaResource
 
         // Staff users have access based on permissions
         return true;
+    }
+
+    /**
+     * Check if user account is active and valid.
+     */
+    protected static function isUserAccountActive(User $user): bool
+    {
+        // Check if the polymorphic relationship exists
+        if (!$user->userable) {
+            return false;
+        }
+
+        // Check if the related account (Customer or AdminUser) is active
+        if (method_exists($user->userable, 'getAttribute') &&
+            $user->userable->getAttribute('status') !== null) {
+            return (bool) $user->userable->status;
+        }
+
+        return true;
+    }
+
+    /**
+     * Apply customer data isolation filter.
+     * This ensures customers can only see their own data.
+     */
+    protected static function applyCustomerDataIsolation(Request $request, $query, string $customerIdField = 'customer_id')
+    {
+        $user = $request->user();
+
+        if ($user && $user->isCustomer()) {
+            // Double-check: ensure customer can only access their own data
+            $query->where($customerIdField, $user->userable_id);
+        }
+
+        return $query;
     }
 
     /**

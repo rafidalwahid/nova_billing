@@ -15,11 +15,25 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add rate limiting middleware
         $middleware->throttleApi();
 
-        // Custom rate limits for specific routes
+        // Custom rate limits for specific routes and user types
         $middleware->alias([
+            // Authentication rate limits
             'auth.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':10,1',
+            'login.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1',
+
+            // API rate limits
             'api.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
+            'api.customer.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':30,1',
+            'api.admin.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':120,1',
+
+            // Feature-specific rate limits
             'ticket.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1',
+            'payment.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':3,1',
+            'invoice.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':10,1',
+
+            // Nova-specific rate limits
+            'nova.customer.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
+            'nova.admin.rate_limit' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':200,1',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

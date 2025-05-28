@@ -26,6 +26,9 @@ class TicketService
      */
     public function createCustomerTicket(Customer $customer, User $user, array $data): Ticket
     {
+        // Validate input parameters
+        $this->validateCustomerTicketCreation($customer, $user, $data);
+
         // Validate and normalize input data
         $normalizedData = $this->normalizeTicketData($data);
 
@@ -47,6 +50,34 @@ class TicketService
         $this->logTicketCreation($ticket, $customer, $user);
 
         return $ticket->load(['responses.user', 'responses.adminUser', 'assignedTo', 'department']);
+    }
+
+    /**
+     * Validate customer ticket creation parameters.
+     */
+    protected function validateCustomerTicketCreation(Customer $customer, User $user, array $data): void
+    {
+        // Validate customer is active
+        if (!$customer->status) {
+            throw new \InvalidArgumentException('Cannot create tickets for inactive customers');
+        }
+
+        // Validate user belongs to customer
+        if (!$user->isCustomer() || $user->userable_id !== $customer->id) {
+            throw new \InvalidArgumentException('User does not belong to the specified customer');
+        }
+
+        // Validate required data fields
+        $validator = validator($data, [
+            'subject' => 'required|string|max:255|min:5',
+            'description' => 'required|string|max:5000|min:10',
+            'priority' => 'nullable|string|in:low,medium,high,urgent',
+            'category' => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            throw new \InvalidArgumentException('Validation failed: ' . $validator->errors()->first());
+        }
     }
 
     /**

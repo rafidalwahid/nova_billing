@@ -9,56 +9,28 @@ use Illuminate\Support\Facades\Log;
 class TaxCalculationService
 {
     /**
-     * Tax rates by country/state
+     * Get tax rates from configuration.
      */
-    private const TAX_RATES = [
-        'US' => [
-            'default' => 0.0875, // 8.75% default US rate
-            'states' => [
-                'CA' => 0.0975, // California
-                'NY' => 0.08,   // New York
-                'TX' => 0.0825, // Texas
-                'FL' => 0.06,   // Florida
-                'WA' => 0.065,  // Washington
-                'OR' => 0.0,    // Oregon (no sales tax)
-                'NH' => 0.0,    // New Hampshire (no sales tax)
-                'MT' => 0.0,    // Montana (no sales tax)
-                'DE' => 0.0,    // Delaware (no sales tax)
-                'AK' => 0.0,    // Alaska (no state sales tax)
-            ]
-        ],
-        'CA' => [
-            'default' => 0.13, // 13% HST/GST for Canada
-            'provinces' => [
-                'ON' => 0.13,   // Ontario HST
-                'QC' => 0.14975, // Quebec GST+QST
-                'BC' => 0.12,   // British Columbia GST+PST
-                'AB' => 0.05,   // Alberta GST only
-                'SK' => 0.11,   // Saskatchewan GST+PST
-                'MB' => 0.12,   // Manitoba GST+PST
-                'NS' => 0.15,   // Nova Scotia HST
-                'NB' => 0.15,   // New Brunswick HST
-                'NL' => 0.15,   // Newfoundland HST
-                'PE' => 0.15,   // Prince Edward Island HST
-                'NT' => 0.05,   // Northwest Territories GST only
-                'NU' => 0.05,   // Nunavut GST only
-                'YT' => 0.05,   // Yukon GST only
-            ]
-        ],
-        'GB' => ['default' => 0.20], // 20% VAT
-        'DE' => ['default' => 0.19], // 19% VAT
-        'FR' => ['default' => 0.20], // 20% VAT
-        'AU' => ['default' => 0.10], // 10% GST
-        'NZ' => ['default' => 0.15], // 15% GST
-    ];
+    private function getTaxRates(): array
+    {
+        return config('tax.rates', []);
+    }
 
     /**
-     * Tax-exempt product categories
+     * Get default tax rate from configuration.
      */
-    private const TAX_EXEMPT_CATEGORIES = [
-        'domain_registration', // Domain registrations are often tax-exempt
-        'ssl_certificate',     // SSL certificates may be tax-exempt in some jurisdictions
-    ];
+    private function getDefaultTaxRate(): float
+    {
+        return config('tax.default_rate', 0.0875);
+    }
+
+    /**
+     * Get tax-exempt categories from configuration.
+     */
+    private function getTaxExemptCategories(): array
+    {
+        return config('tax.exempt_categories', []);
+    }
 
     /**
      * Calculate tax amount for a customer and product/service.
@@ -115,13 +87,14 @@ class TaxCalculationService
     {
         $country = strtoupper($customer->country ?? 'US');
         $state = strtoupper($customer->state ?? '');
+        $taxRates = $this->getTaxRates();
 
         // Check if we have tax rates for this country
-        if (!isset(self::TAX_RATES[$country])) {
+        if (!isset($taxRates[$country])) {
             return 0.0; // No tax for unknown countries
         }
 
-        $countryRates = self::TAX_RATES[$country];
+        $countryRates = $taxRates[$country];
 
         // For US, check state-specific rates
         if ($country === 'US' && $state && isset($countryRates['states'][$state])) {
@@ -134,7 +107,7 @@ class TaxCalculationService
         }
 
         // Return default rate for country
-        return $countryRates['default'] ?? 0.0;
+        return $countryRates['default'] ?? $this->getDefaultTaxRate();
     }
 
     /**
@@ -142,7 +115,8 @@ class TaxCalculationService
      */
     private function isProductTaxExempt(Product $product): bool
     {
-        return in_array($product->category, self::TAX_EXEMPT_CATEGORIES);
+        $exemptCategories = $this->getTaxExemptCategories();
+        return in_array($product->category, $exemptCategories);
     }
 
     /**

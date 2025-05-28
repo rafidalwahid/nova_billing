@@ -76,13 +76,8 @@ class Customer extends Resource
         // Only load essential relationships for index view
         $query = $query->with(['user']);
 
-        // If user is a customer, only show their own record
-        $user = $request->user();
-        if ($user && $user->isCustomer()) {
-            $query->where('id', $user->userable->id);
-        }
-
-        return $query;
+        // Apply customer data isolation
+        return static::applyCustomerDataIsolation($request, $query, 'id');
     }
 
     /**
@@ -109,13 +104,8 @@ class Customer extends Resource
             }
         ]);
 
-        // Apply customer filter
-        $user = $request->user();
-        if ($user && $user->isCustomer()) {
-            $query->where('id', $user->userable->id);
-        }
-
-        return $query;
+        // Apply customer data isolation
+        return static::applyCustomerDataIsolation($request, $query, 'id');
     }
 
     /**

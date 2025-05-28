@@ -109,7 +109,15 @@ class PaymentService
         ]);
 
         if ($validator->fails()) {
-            throw new \InvalidArgumentException($validator->errors()->first());
+            throw new \App\Exceptions\BillingException(
+                'Payment validation failed: ' . $validator->errors()->first(),
+                'PAYMENT_VALIDATION_FAILED',
+                [
+                    'validation_errors' => $validator->errors()->toArray(),
+                    'invoice_id' => $invoice->id,
+                    'payment_data' => array_except($paymentData, ['card_number', 'card_cvv'])
+                ]
+            );
         }
     }
 

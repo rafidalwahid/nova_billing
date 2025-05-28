@@ -4,15 +4,20 @@ namespace App\Policies;
 
 use App\Models\Ticket;
 use App\Models\User;
-use App\Models\AdminUser;
 
-class TicketPolicy
+class TicketPolicy extends BasePolicy
 {
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
+        // Customers can view tickets (filtered to their own)
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'support_management.view');
     }
 
@@ -21,6 +26,12 @@ class TicketPolicy
      */
     public function view(User $user, Ticket $ticket): bool
     {
+        // Customers can only view their own tickets
+        if ($user->isCustomer()) {
+            return $this->isCustomerOwner($user, $ticket);
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'support_management.view');
     }
 
@@ -29,6 +40,12 @@ class TicketPolicy
      */
     public function create(User $user): bool
     {
+        // Customers can create tickets
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'support_management.create');
     }
 
@@ -37,6 +54,12 @@ class TicketPolicy
      */
     public function update(User $user, Ticket $ticket): bool
     {
+        // Customers cannot update tickets (only add responses)
+        if ($user->isCustomer()) {
+            return false;
+        }
+
+        // Staff users need proper permissions
         return $this->hasPermission($user, 'support_management.update');
     }
 
@@ -45,22 +68,7 @@ class TicketPolicy
      */
     public function delete(User $user, Ticket $ticket): bool
     {
+        // Only staff users can delete tickets
         return $this->hasPermission($user, 'support_management.delete');
-    }
-
-    /**
-     * Check if user has specific permission.
-     */
-    private function hasPermission(User $user, string $permission): bool
-    {
-        $adminUser = AdminUser::whereHas('user', function ($query) use ($user) {
-            $query->where('id', $user->id);
-        })->first();
-
-        if (!$adminUser || !$adminUser->role) {
-            return false;
-        }
-
-        return $adminUser->role->permissions()->where('slug', $permission)->exists();
     }
 }
