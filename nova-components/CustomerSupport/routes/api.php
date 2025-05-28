@@ -27,6 +27,10 @@ Route::get('/tickets/{id}', [CustomerTicketController::class, 'show'])
 Route::post('/tickets', [CustomerTicketController::class, 'store'])
     ->middleware('throttle:5,1'); // 5 ticket creations per minute
 
+// Get ticket responses - Connect to real database
+Route::get('/tickets/{id}/responses', [CustomerTicketController::class, 'getResponses'])
+    ->middleware('throttle:120,1'); // 120 requests per minute
+
 // Add response to ticket - Connect to real database (rate limited)
 Route::post('/tickets/{id}/responses', [CustomerTicketController::class, 'addResponse'])
     ->middleware('throttle:10,1'); // 10 responses per minute

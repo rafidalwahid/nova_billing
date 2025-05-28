@@ -169,6 +169,48 @@ class CustomerTicketController extends Controller
     }
 
     /**
+     * Get ticket responses.
+     *
+     * @param Request $request
+     * @param int $ticketId
+     * @return JsonResponse
+     */
+    public function getResponses(Request $request, int $ticketId): JsonResponse
+    {
+        try {
+            $customer = $request->user()->userable;
+
+            // Get ticket with authorization check
+            $ticket = $this->ticketService->getCustomerTicket($customer, $ticketId);
+
+            // Get responses using service
+            $responses = $this->ticketService->getTicketResponses($ticket);
+
+            return response()->json([
+                'data' => $responses
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Ticket not found.',
+                'message' => 'The requested ticket does not exist or you do not have permission to view it.'
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve ticket responses', [
+                'user_id' => $request->user()->id,
+                'ticket_id' => $ticketId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Unable to retrieve responses at this time.',
+                'message' => 'Please try again later or contact support if the problem persists.'
+            ], 500);
+        }
+    }
+
+    /**
      * Add a response to an existing ticket.
      *
      * @param AddTicketResponseRequest $request

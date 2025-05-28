@@ -5,179 +5,52 @@
       <h1 class="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-2 sm:mb-4">
         Support Tickets
       </h1>
+      <p v-if="totalTickets > 0" class="text-sm text-gray-600 dark:text-gray-400">
+        {{ totalTickets }} {{ totalTickets === 1 ? 'ticket' : 'tickets' }} found
+      </p>
     </div>
 
-    <!-- Search, Filters and Create Button - Responsive Layout -->
-    <div class="space-y-4 lg:space-y-0">
-      <!-- Mobile/Tablet: Stacked Layout -->
-      <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:hidden">
-        <!-- Search -->
-        <div class="relative flex-1">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <SearchIcon />
-          </div>
-          <input
-            :value="searchQuery"
-            @input="$emit('update:searchQuery', $event.target.value)"
-            type="text"
-            placeholder="Search tickets..."
-            class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-sm sm:text-base"
+    <!-- Filters Container -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 p-4 sm:p-6 shadow-sm">
+      <!-- Mobile Layout -->
+      <div class="sm:hidden space-y-4">
+        <SearchInput
+          :modelValue="searchQuery"
+          @update:modelValue="$emit('update:searchQuery', $event)"
+          @input="$emit('search')"
+        />
+        <div class="flex gap-3">
+          <FilterDropdown
+            v-model="showFilters"
+            :statusFilter="statusFilter"
+            :departmentFilter="departmentFilter"
+            @update:statusFilter="$emit('update:statusFilter', $event)"
+            @update:departmentFilter="$emit('update:departmentFilter', $event)"
+            @filterChange="$emit('filterChange')"
           />
-        </div>
-
-        <!-- Filter and Create Button Row -->
-        <div class="flex gap-3 sm:gap-4">
-          <!-- Filter Button -->
-          <div class="relative flex-1 sm:flex-none">
-            <button
-              @click="showFilters = !showFilters"
-              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 text-sm sm:text-base font-medium"
-            >
-              <FilterIcon />
-              <span>Filter</span>
-            </button>
-
-            <!-- Filter Dropdown -->
-            <div
-              v-if="showFilters"
-              class="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl z-20"
-            >
-              <div class="p-4 sm:p-6 space-y-4">
-                <!-- Status Filter -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                  <select
-                    :value="statusFilter"
-                    @change="$emit('update:statusFilter', $event.target.value)"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
-                  >
-                    <option
-                      v-for="option in statusOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Department Filter -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
-                  <select
-                    :value="departmentFilter"
-                    @change="$emit('update:departmentFilter', $event.target.value)"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
-                  >
-                    <option
-                      v-for="option in departmentOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Create Button Mobile/Tablet -->
-          <button
-            @click="$emit('createTicket')"
-            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg create-ticket-btn text-sm sm:text-base"
-          >
-            <PlusIcon />
-            <span class="hidden xs:inline">Create Support Ticket</span>
-            <span class="xs:hidden">Create</span>
-          </button>
+          <CreateButton @click="$emit('createTicket')" />
         </div>
       </div>
 
-      <!-- Desktop: Horizontal Layout -->
-      <div class="hidden lg:flex items-center gap-4 justify-between w-full min-h-[44px] filters-container">
-        <!-- Left Side: Search and Filter -->
-        <div class="flex items-center gap-4 flex-shrink-0 filters-left">
-          <!-- Search -->
-          <div class="relative w-80 xl:w-96">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon />
-            </div>
-            <input
-              :value="searchQuery"
-              @input="$emit('update:searchQuery', $event.target.value)"
-              type="text"
-              placeholder="Search tickets..."
-              class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-            />
-          </div>
-
-          <!-- Filter Button -->
-          <div class="relative">
-            <button
-              @click="showFilters = !showFilters"
-              class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200"
-            >
-              <FilterIcon />
-              <span>Filter</span>
-            </button>
-
-            <!-- Filter Dropdown Desktop -->
-            <div
-              v-if="showFilters"
-              class="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10"
-            >
-              <div class="p-4 space-y-4">
-                <!-- Status Filter -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                  <select
-                    :value="statusFilter"
-                    @change="$emit('update:statusFilter', $event.target.value)"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    <option
-                      v-for="option in statusOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Department Filter -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
-                  <select
-                    :value="departmentFilter"
-                    @change="$emit('update:departmentFilter', $event.target.value)"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    <option
-                      v-for="option in departmentOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
+      <!-- Desktop Layout -->
+      <div class="hidden sm:flex items-center justify-between gap-6">
+        <div class="flex items-center gap-4 flex-1">
+          <SearchInput
+            :modelValue="searchQuery"
+            @update:modelValue="$emit('update:searchQuery', $event)"
+            @input="$emit('search')"
+            class="max-w-md"
+          />
+          <FilterDropdown
+            v-model="showFilters"
+            :statusFilter="statusFilter"
+            :departmentFilter="departmentFilter"
+            @update:statusFilter="$emit('update:statusFilter', $event)"
+            @update:departmentFilter="$emit('update:departmentFilter', $event)"
+            @filterChange="$emit('filterChange')"
+          />
         </div>
-
-        <!-- Right Side: Create Ticket Button Desktop -->
-        <div class="flex-shrink-0 filters-right">
-          <button
-            @click="$emit('createTicket')"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-all duration-200 whitespace-nowrap shadow-sm border-0 relative z-10 create-ticket-btn"
-          >
-            <PlusIcon />
-            Create Support Ticket
-          </button>
-        </div>
+        <CreateButton @click="$emit('createTicket')" />
       </div>
     </div>
   </div>
@@ -185,155 +58,162 @@
 
 <script>
 import { ref } from 'vue'
+import Icon from './Icon.vue'
+import { useTicketHelpers } from '../composables/useTicketHelpers.js'
 
-// Icon Components
-const PlusIcon = {
+// Sub-components for better organization
+const SearchInput = {
   template: `
-    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-    </svg>
-  `
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <Icon name="Search" />
+      </div>
+      <input
+        :value="modelValue"
+        @input="$emit('update:modelValue', $event.target.value)"
+        type="text"
+        placeholder="Search tickets..."
+        class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+      />
+    </div>
+  `,
+  props: ['modelValue'],
+  emits: ['update:modelValue', 'input'],
+  components: { Icon }
 }
 
-const SearchIcon = {
+const FilterDropdown = {
   template: `
-    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  `
+    <div class="relative">
+      <button
+        @click="$emit('update:modelValue', !modelValue)"
+        class="inline-flex items-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+      >
+        <Icon name="Filter" />
+        <span>Filter</span>
+        <span v-if="hasActiveFilters" class="w-2 h-2 bg-blue-500 rounded-full"></span>
+      </button>
+
+      <div
+        v-if="modelValue"
+        class="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl z-20 p-4 space-y-4"
+      >
+        <FilterSelect
+          label="Status"
+          :value="statusFilter"
+          :options="statusOptions"
+          @change="$emit('update:statusFilter', $event); $emit('filterChange')"
+        />
+        <FilterSelect
+          label="Department"
+          :value="departmentFilter"
+          :options="departmentOptions"
+          @change="$emit('update:departmentFilter', $event); $emit('filterChange')"
+        />
+      </div>
+    </div>
+  `,
+  props: ['modelValue', 'statusFilter', 'departmentFilter'],
+  emits: ['update:modelValue', 'update:statusFilter', 'update:departmentFilter', 'filterChange'],
+  computed: {
+    hasActiveFilters() {
+      return this.statusFilter || this.departmentFilter
+    },
+    statusOptions() {
+      return [
+        { value: '', label: 'All Statuses' },
+        { value: 'open', label: 'Open' },
+        { value: 'waiting_customer', label: 'Waiting for Response' },
+        { value: 'resolved', label: 'Resolved' },
+        { value: 'closed', label: 'Closed' }
+      ]
+    },
+    departmentOptions() {
+      return [
+        { value: '', label: 'All Departments' },
+        { value: 'billing', label: 'Billing Support' },
+        { value: 'technical', label: 'Technical Support' },
+        { value: 'sales', label: 'Sales Inquiry' },
+        { value: 'general', label: 'General Support' }
+      ]
+    }
+  },
+  components: { Icon }
 }
 
-const FilterIcon = {
+const FilterSelect = {
   template: `
-    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-    </svg>
-  `
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        {{ label }}
+      </label>
+      <select
+        :value="value"
+        @change="$emit('change', $event.target.value)"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+      >
+        <option v-for="option in options" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
+  `,
+  props: ['label', 'value', 'options'],
+  emits: ['change']
+}
+
+const CreateButton = {
+  template: `
+    <button
+      @click="$emit('click')"
+      class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-sm whitespace-nowrap"
+    >
+      <Icon name="Plus" />
+      <span class="hidden sm:inline">Create Support Ticket</span>
+      <span class="sm:hidden">Create</span>
+    </button>
+  `,
+  emits: ['click'],
+  components: { Icon }
 }
 
 export default {
   name: 'TicketFilters',
 
   components: {
-    PlusIcon,
-    SearchIcon,
-    FilterIcon
+    Icon,
+    SearchInput,
+    FilterDropdown,
+    FilterSelect,
+    CreateButton
   },
 
   props: {
-    searchQuery: {
-      type: String,
-      default: '',
-      validator: (value) => typeof value === 'string'
-    },
-    statusFilter: {
-      type: String,
-      default: '',
-      validator: (value) => typeof value === 'string'
-    },
-    departmentFilter: {
-      type: String,
-      default: '',
-      validator: (value) => typeof value === 'string'
-    },
-    totalTickets: {
-      type: Number,
-      default: 0,
-      validator: (value) => typeof value === 'number' && value >= 0
-    }
+    searchQuery: { type: String, default: '' },
+    statusFilter: { type: String, default: '' },
+    departmentFilter: { type: String, default: '' },
+    totalTickets: { type: Number, default: 0 },
+    loading: { type: Boolean, default: false }
   },
 
-  emits: {
-    'update:searchQuery': (value) => typeof value === 'string',
-    'update:statusFilter': (value) => typeof value === 'string',
-    'update:departmentFilter': (value) => typeof value === 'string',
-    'createTicket': null
-  },
+  emits: [
+    'update:searchQuery',
+    'update:statusFilter',
+    'update:departmentFilter',
+    'createTicket',
+    'search',
+    'filterChange'
+  ],
 
   setup() {
     const showFilters = ref(false)
-
-    // Filter options
-    const statusOptions = [
-      { value: '', label: 'All Statuses' },
-      { value: 'open', label: 'Open' },
-      { value: 'waiting_customer', label: 'Waiting for Your Response' },
-      { value: 'resolved', label: 'Resolved' },
-      { value: 'closed', label: 'Closed' }
-    ]
-
-    const departmentOptions = [
-      { value: '', label: 'All Departments' },
-      { value: 'billing', label: 'Billing Support' },
-      { value: 'technical', label: 'Technical Support' },
-      { value: 'sales', label: 'Sales Inquiry' },
-      { value: 'general', label: 'General Support' }
-    ]
+    const { statusConfig, departmentConfig } = useTicketHelpers()
 
     return {
       showFilters,
-      statusOptions,
-      departmentOptions
+      statusConfig,
+      departmentConfig
     }
   }
 }
 </script>
-
-<style scoped>
-/* Ensure create button is always visible in both light and dark modes */
-.filters-container .filters-right .create-ticket-btn {
-  background-color: #10b981 !important;
-  color: white !important;
-  border: none !important;
-  display: inline-flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative !important;
-  z-index: 10 !important;
-  min-width: auto !important;
-  max-width: none !important;
-  width: auto !important;
-  height: auto !important;
-  min-height: 44px !important;
-}
-
-.filters-container .filters-right .create-ticket-btn:hover {
-  background-color: #059669 !important;
-  color: white !important;
-}
-
-.filters-container .filters-right .create-ticket-btn:focus {
-  background-color: #059669 !important;
-  color: white !important;
-  outline: 2px solid #10b981 !important;
-  outline-offset: 2px !important;
-}
-
-/* Ensure the container is always visible */
-.filters-container {
-  display: flex !important;
-  width: 100% !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  min-height: 44px !important;
-}
-
-.filters-left {
-  display: flex !important;
-  align-items: center !important;
-  flex-shrink: 0 !important;
-}
-
-.filters-right {
-  display: flex !important;
-  flex-shrink: 0 !important;
-  align-items: center !important;
-}
-
-/* Override any Nova styles that might hide the button */
-.filters-right button {
-  display: inline-flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-</style>

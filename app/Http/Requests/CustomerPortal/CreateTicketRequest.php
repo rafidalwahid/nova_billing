@@ -12,53 +12,43 @@ class CreateTicketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Only allow customers to create tickets
+        // Only customers can create tickets through this endpoint
         return $this->user() && $this->user()->isCustomer();
     }
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
+            'department' => [
+                'required',
+                'string',
+                Rule::in(['billing', 'technical', 'general', 'sales'])
+            ],
+            'priority' => [
+                'required',
+                'string',
+                Rule::in(['low', 'medium', 'high'])
+            ],
             'subject' => [
                 'required',
                 'string',
-                'max:255',
-                'regex:/^[a-zA-Z0-9\s\-_.,!?()]+$/' // Allow alphanumeric, spaces, and common punctuation
+                'min:5',
+                'max:100'
             ],
             'description' => [
                 'required',
                 'string',
-                'min:10',
-                'max:2000',
-                'regex:/^[a-zA-Z0-9\s\-_.,!?()\n\r]+$/' // Allow alphanumeric, spaces, punctuation, and line breaks
-            ],
-            'priority' => [
-                'sometimes',
-                'required',
-                Rule::in(['low', 'medium', 'high', 'normal', 'urgent'])
-            ],
-            'category' => [
-                'sometimes',
-                'required',
-                Rule::in(['billing', 'technical', 'sales', 'general'])
-            ],
-            // Nova tool specific fields
-            'department' => [
-                'sometimes',
-                'required',
-                Rule::in(['billing', 'technical', 'sales', 'general'])
+                'min:20',
+                'max:1000'
             ],
             'email' => [
-                'sometimes',
                 'required',
-                'email:rfc,dns',
-                'max:255'
-            ],
+                'email',
+                'max:254'
+            ]
         ];
     }
 
@@ -68,16 +58,18 @@ class CreateTicketRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'subject.required' => 'Subject is required.',
-            'subject.max' => 'Subject cannot exceed 255 characters.',
-            'description.required' => 'Description is required.',
-            'description.min' => 'Description must be at least 10 characters.',
-            'description.max' => 'Description cannot exceed 2000 characters.',
-            'priority.in' => 'Priority must be one of: low, medium, high, normal, urgent.',
-            'category.in' => 'Category must be one of: billing, technical, sales, general.',
-            'department.in' => 'Department must be one of: billing, technical, sales, general.',
-            'email.required' => 'Email is required.',
-            'email.email' => 'Please provide a valid email address.',
+            'department.required' => 'Please select a department.',
+            'department.in' => 'Please select a valid department.',
+            'priority.required' => 'Please select a priority level.',
+            'priority.in' => 'Please select a valid priority level.',
+            'subject.required' => 'Please provide a subject for your ticket.',
+            'subject.min' => 'Subject must be at least 5 characters long.',
+            'subject.max' => 'Subject cannot exceed 100 characters.',
+            'description.required' => 'Please provide a description of your issue.',
+            'description.min' => 'Description must be at least 20 characters long.',
+            'description.max' => 'Description cannot exceed 1000 characters.',
+            'email.required' => 'Please provide a contact email address.',
+            'email.email' => 'Please provide a valid email address.'
         ];
     }
 
@@ -87,8 +79,11 @@ class CreateTicketRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'subject' => 'ticket subject',
-            'description' => 'ticket description',
+            'department' => 'department',
+            'priority' => 'priority level',
+            'subject' => 'subject',
+            'description' => 'description',
+            'email' => 'email address'
         ];
     }
 
@@ -98,34 +93,9 @@ class CreateTicketRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'subject' => $this->sanitizeInput($this->subject),
-            'description' => $this->sanitizeInput($this->description),
-            'email' => $this->email ? strtolower(trim($this->email)) : null,
+            'subject' => trim($this->subject ?? ''),
+            'description' => trim($this->description ?? ''),
+            'email' => trim(strtolower($this->email ?? ''))
         ]);
-    }
-
-    /**
-     * Sanitize input to prevent XSS and other security issues.
-     *
-     * @param string|null $input
-     * @return string|null
-     */
-    private function sanitizeInput(?string $input): ?string
-    {
-        if (!$input) {
-            return null;
-        }
-
-        // Remove HTML tags and encode special characters
-        $sanitized = strip_tags($input);
-        $sanitized = htmlspecialchars($sanitized, ENT_QUOTES, 'UTF-8');
-
-        // Trim whitespace
-        $sanitized = trim($sanitized);
-
-        // Remove excessive whitespace
-        $sanitized = preg_replace('/\s+/', ' ', $sanitized);
-
-        return $sanitized;
     }
 }

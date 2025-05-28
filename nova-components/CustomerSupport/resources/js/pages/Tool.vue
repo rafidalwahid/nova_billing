@@ -1,20 +1,23 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-all duration-500">
+  <div>
     <Head title="My Support" />
 
+    <!-- Error Boundary -->
+    <ErrorBoundary v-if="hasError" :error="error" @retry="retryOperation" />
+
     <!-- Main Content Area -->
-    <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
+    <div v-else class="p-6 space-y-6">
       <!-- Filters -->
       <div class="transform transition-all duration-300 hover:scale-[1.01]">
         <TicketFilters
-          v-model:searchQuery="searchQuery"
-          v-model:statusFilter="statusFilter"
-          v-model:departmentFilter="departmentFilter"
+          v-model:searchQuery="filters.search"
+          v-model:statusFilter="filters.status"
+          v-model:departmentFilter="filters.department"
           :totalTickets="totalTickets"
+          :loading="loading"
           @createTicket="openWizard"
-          @update:searchQuery="handleSearch"
-          @update:statusFilter="handleFilterChange"
-          @update:departmentFilter="handleFilterChange"
+          @search="handleSearch"
+          @filterChange="handleFilterChange"
         />
       </div>
 
@@ -30,23 +33,15 @@
           @createTicket="openWizard"
         />
       </div>
-
-      <!-- Loading State -->
-      <div v-if="loading && tickets.length === 0" class="transform transition-all duration-300">
-        <LoadingSpinner
-          message="Loading your support tickets"
-        />
-      </div>
     </div>
 
-    <!-- Ticket Creation Wizard -->
+    <!-- Modals -->
     <TicketWizard
       :isOpen="showWizard"
       @close="closeWizard"
       @ticketCreated="onTicketCreated"
     />
 
-    <!-- Ticket Details Modal -->
     <TicketDetailsModal
       :isOpen="showTicketDetails"
       :ticket="selectedTicket"
@@ -57,55 +52,71 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { Head } from '@inertiajs/vue3'
+import { useDebounce } from '@/composables/useDebounce'
+import apiService from '../services/api.js'
 import TicketFilters from '../components/TicketFilters.vue'
 import TicketList from '../components/TicketList.vue'
-import LoadingSpinner from '../components/LoadingSpinner.vue'
 import TicketWizard from '../components/TicketWizard.vue'
 import TicketDetailsModal from '../components/TicketDetailsModal.vue'
+import ErrorBoundary from '../components/ErrorBoundary.vue'
 
 export default {
   name: 'CustomerSupportTool',
 
   components: {
+    Head,
     TicketFilters,
     TicketList,
-    LoadingSpinner,
     TicketWizard,
-    TicketDetailsModal
+    TicketDetailsModal,
+    ErrorBoundary
   },
 
   setup() {
-    // Reactive state
+    // State
     const loading = ref(false)
+    const hasError = ref(false)
+    const error = ref(null)
     const tickets = ref([])
+    const totalTickets = ref(0)
+    const showWizard = ref(false)
+    const showTicketDetails = ref(false)
+    const selectedTicket = ref(null)
+
+    // Pagination
     const pagination = reactive({
       current_page: 1,
       last_page: 1,
       per_page: 10,
       total: 0
     })
-    const totalTickets = ref(0)
-    const showWizard = ref(false)
-    const showTicketDetails = ref(false)
-    const selectedTicket = ref(null)
-    const searchQuery = ref('')
-    const statusFilter = ref('')
-    const departmentFilter = ref('')
-    const searchTimeout = ref(null)
+
+    // Filters
+    const filters = reactive({
+      search: '',
+      status: '',
+      department: ''
+    })
+
+    // Debounced search
+    const debouncedSearch = useDebounce(() => {
+      loadTickets(1)
+    }, 500)
 
     return {
       loading,
+      hasError,
+      error,
       tickets,
-      pagination,
       totalTickets,
       showWizard,
       showTicketDetails,
       selectedTicket,
-      searchQuery,
-      statusFilter,
-      departmentFilter,
-      searchTimeout
+      pagination,
+      filters,
+      debouncedSearch
     }
   },
 
@@ -117,47 +128,16 @@ export default {
     async loadTickets(page = 1) {
       try {
         this.loading = true
+        this.hasError = false
 
-        // Build query parameters
-        const params = { page }
+        const response = await apiService.getTickets(this.filters, page)
 
-        if (this.searchQuery.trim()) {
-          params.search = this.searchQuery.trim()
-        }
-
-        if (this.statusFilter) {
-          params.status = this.statusFilter
-        }
-
-        if (this.departmentFilter) {
-          params.department = this.departmentFilter
-        }
-
-        // Make API request using Nova.request
-        const response = await Nova.request().get('/nova-vendor/customer-support/tickets', {
-          params
-        })
-
-        this.tickets = response.data.data || []
-        this.pagination = response.data.meta || {}
-        this.totalTickets = response.data.meta?.total || 0
+        this.tickets = response.data || []
+        this.pagination = response.meta || {}
+        this.totalTickets = response.meta?.total || 0
 
       } catch (error) {
-        console.error('Error loading tickets:', error)
-
-        // Show user-friendly error message
-        if (error.response?.status === 401) {
-          this.$toasted?.error('Authentication required. Please log in again.')
-        } else if (error.response?.status === 403) {
-          this.$toasted?.error('Access denied. You do not have permission to view tickets.')
-        } else {
-          this.$toasted?.error('Failed to load tickets. Please try again.')
-        }
-
-        // Reset data on error
-        this.tickets = []
-        this.pagination = { current_page: 1, last_page: 1, per_page: 10, total: 0 }
-        this.totalTickets = 0
+        this.handleError(error, 'Failed to load tickets')
       } finally {
         this.loading = false
       }
@@ -173,15 +153,12 @@ export default {
       this.selectedTicket = null
     },
 
-    onResponseAdded() {
-      // Refresh the ticket list to show updated status
-      this.loadTickets(this.pagination.current_page)
-
-      if (this.$toasted) {
-        this.$toasted.success('Response added successfully!', {
-          duration: 3000,
-          position: 'top-right'
-        })
+    async onResponseAdded() {
+      try {
+        await this.loadTickets(this.pagination.current_page)
+        apiService.showSuccess('Response added successfully!')
+      } catch (error) {
+        this.handleError(error, 'Failed to refresh tickets')
       }
     },
 
@@ -193,36 +170,42 @@ export default {
       this.showWizard = false
     },
 
-    onTicketCreated() {
-      this.loadTickets(1)
-
-      if (this.$toasted) {
-        this.$toasted.success('Support ticket created successfully!', {
-          duration: 5000,
-          position: 'top-right'
-        })
+    async onTicketCreated() {
+      try {
+        await this.loadTickets(1)
+        apiService.showSuccess('Support ticket created successfully!')
+      } catch (error) {
+        this.handleError(error, 'Failed to refresh tickets')
       }
     },
 
     handleSearch() {
-      if (this.searchTimeout) {
-        clearTimeout(this.searchTimeout)
-      }
-
-      this.searchTimeout = setTimeout(() => {
-        this.loadTickets(1)
-      }, 500)
+      this.debouncedSearch()
     },
 
     handleFilterChange() {
       this.loadTickets(1)
     },
 
-    clearSearchTimeout() {
-      if (this.searchTimeout) {
-        clearTimeout(this.searchTimeout)
-        this.searchTimeout = null
+    handleError(error, defaultMessage) {
+      console.error('CustomerSupport Error:', error)
+
+      this.hasError = true
+      this.error = {
+        message: error.response?.data?.message || defaultMessage,
+        details: error.message,
+        canRetry: true
       }
+
+      // Show toast notification
+      const errorMessage = apiService.formatError(error).message
+      apiService.showError(errorMessage)
+    },
+
+    retryOperation() {
+      this.hasError = false
+      this.error = null
+      this.loadTickets(this.pagination.current_page)
     }
   }
 }

@@ -89,6 +89,29 @@ class TicketService
     }
 
     /**
+     * Get ticket responses.
+     *
+     * @param Ticket $ticket
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getTicketResponses(Ticket $ticket): \Illuminate\Database\Eloquent\Collection
+    {
+        return $ticket->responses()
+            ->with(['user', 'adminUser'])
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($response) {
+                return [
+                    'id' => $response->id,
+                    'message' => $response->message,
+                    'created_at' => $response->created_at,
+                    'is_customer' => $response->type === 'customer',
+                    'author_name' => $response->user ? $response->user->name : ($response->adminUser ? $response->adminUser->name : 'System'),
+                ];
+            });
+    }
+
+    /**
      * Add a customer response to a ticket.
      *
      * @param Ticket $ticket

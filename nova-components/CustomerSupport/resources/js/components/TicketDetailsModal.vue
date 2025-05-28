@@ -1,6 +1,6 @@
 <template>
-  <div 
-    v-if="isOpen" 
+  <div
+    v-if="isOpen"
     class="fixed inset-0 bg-gradient-to-br from-black/40 to-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
     @click.self="$emit('close')"
   >
@@ -20,8 +20,8 @@
             </p>
           </div>
         </div>
-        <button 
-          @click="$emit('close')" 
+        <button
+          @click="$emit('close')"
           class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <CloseIcon />
@@ -35,7 +35,7 @@
           <div class="flex flex-wrap items-center gap-4 text-sm">
             <div class="flex items-center gap-2">
               <span class="text-gray-500 dark:text-gray-400">Status:</span>
-              <span 
+              <span
                 :class="getStatusBadgeClass(ticket?.status)"
                 class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wider border"
               >
@@ -62,7 +62,7 @@
           <div v-if="loading" class="flex justify-center py-8">
             <LoadingSpinner message="Loading conversation..." />
           </div>
-          
+
           <div v-else-if="responses.length === 0" class="text-center py-8">
             <div class="text-gray-500 dark:text-gray-400">
               No responses yet. Be the first to reply!
@@ -70,15 +70,15 @@
           </div>
 
           <div v-else class="space-y-4">
-            <div 
-              v-for="response in responses" 
+            <div
+              v-for="response in responses"
               :key="response.id"
               class="flex gap-4"
               :class="{ 'flex-row-reverse': response.is_customer }"
             >
               <!-- Avatar -->
               <div class="flex-shrink-0">
-                <div 
+                <div
                   class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium"
                   :class="response.is_customer ? 'bg-blue-500' : 'bg-gray-500'"
                 >
@@ -87,19 +87,19 @@
               </div>
 
               <!-- Message -->
-              <div 
+              <div
                 class="flex-1 max-w-[70%]"
                 :class="{ 'text-right': response.is_customer }"
               >
-                <div 
+                <div
                   class="rounded-2xl px-4 py-3 shadow-sm border"
-                  :class="response.is_customer 
-                    ? 'bg-blue-500 text-white border-blue-500' 
+                  :class="response.is_customer
+                    ? 'bg-blue-500 text-white border-blue-500'
                     : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600'"
                 >
                   <div class="text-sm whitespace-pre-wrap">{{ response.message }}</div>
                 </div>
-                <div 
+                <div
                   class="text-xs mt-1 px-2"
                   :class="response.is_customer ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'"
                 >
@@ -156,7 +156,10 @@
 </template>
 
 <script>
+import { ref, computed, watch } from 'vue'
 import LoadingSpinner from './LoadingSpinner.vue'
+import apiService from '../services/api.js'
+import { useTicketHelpers } from '../composables/useTicketHelpers.js'
 
 // Icon Components
 const TicketIcon = {
@@ -209,129 +212,85 @@ export default {
     addResponse: (message) => typeof message === 'string' && message.trim().length > 0
   },
 
-  data() {
-    return {
-      loading: false,
-      responses: [],
-      replyMessage: '',
-      isSubmitting: false
-    }
-  },
+  setup(props, { emit }) {
+    const loading = ref(false)
+    const responses = ref([])
+    const replyMessage = ref('')
+    const isSubmitting = ref(false)
+    const { getStatusBadgeClass, formatStatus, formatDate, getDepartmentConfig } = useTicketHelpers()
 
-  computed: {
-    canReply() {
-      return this.ticket && ['open', 'in_progress'].includes(this.ticket.status)
-    }
-  },
+    const canReply = computed(() => {
+      return props.ticket && ['open', 'in_progress'].includes(props.ticket.status)
+    })
 
-  watch: {
-    isOpen(newValue) {
-      if (newValue && this.ticket) {
-        this.loadResponses()
+    watch(() => props.isOpen, (newValue) => {
+      if (newValue && props.ticket) {
+        loadResponses()
       }
-    }
-  },
+    })
 
-  methods: {
-    async loadResponses() {
-      if (!this.ticket) return
+    const loadResponses = async () => {
+      if (!props.ticket) return
 
       try {
-        this.loading = true
-        const response = await Nova.request().get(`/nova-vendor/customer-support/tickets/${this.ticket.id}/responses`)
-        this.responses = response.data.data || []
+        loading.value = true
+        const response = await apiService.getTicketResponses(props.ticket.id)
+        responses.value = response.data || []
       } catch (error) {
         console.error('Failed to load responses:', error)
-        this.responses = []
+        responses.value = []
+        apiService.showError('Failed to load conversation history')
       } finally {
-        this.loading = false
+        loading.value = false
       }
-    },
+    }
 
-    async submitReply() {
-      if (!this.replyMessage.trim() || !this.ticket) return
+    const submitReply = async () => {
+      if (!replyMessage.value.trim() || !props.ticket) return
 
       try {
-        this.isSubmitting = true
-        
-        const response = await Nova.request().post(`/nova-vendor/customer-support/tickets/${this.ticket.id}/responses`, {
-          message: this.replyMessage.trim()
-        })
+        isSubmitting.value = true
 
-        this.responses.push(response.data.data)
-        this.replyMessage = ''
-        this.$emit('addResponse', response.data.data)
+        const response = await apiService.addTicketResponse(props.ticket.id, replyMessage.value.trim())
 
-        if (this.$toasted) {
-          this.$toasted.success('Reply sent successfully!', {
-            duration: 3000,
-            position: 'top-right'
-          })
-        }
+        responses.value.push(response.data)
+        replyMessage.value = ''
+        emit('addResponse', response.data)
+
+        apiService.showSuccess('Reply sent successfully!')
 
       } catch (error) {
         console.error('Failed to send reply:', error)
-        
-        if (this.$toasted) {
-          this.$toasted.error('Failed to send reply. Please try again.', {
-            duration: 5000,
-            position: 'top-right'
-          })
-        }
+        const errorMessage = apiService.formatError(error).message
+        apiService.showError(errorMessage)
       } finally {
-        this.isSubmitting = false
+        isSubmitting.value = false
       }
-    },
+    }
 
-    getStatusBadgeClass(status) {
-      const classes = {
-        'open': 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/30',
-        'in_progress': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/30',
-        'resolved': 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/30',
-        'closed': 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
-      }
-      return classes[status] || classes.closed
-    },
+    const getDepartmentName = (category) => {
+      const config = getDepartmentConfig(category)
+      return config.label
+    }
 
-    formatStatus(status) {
-      const statusMap = {
-        'open': 'Open',
-        'in_progress': 'In Progress',
-        'resolved': 'Resolved',
-        'closed': 'Closed'
-      }
-      return statusMap[status] || 'Unknown'
-    },
-
-    formatDate(date) {
-      if (!date) return ''
-      
-      try {
-        return new Date(date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-      } catch (error) {
-        return 'Invalid Date'
-      }
-    },
-
-    getDepartmentName(category) {
-      const departmentNames = {
-        'billing': 'Billing Support',
-        'technical': 'Technical Support',
-        'sales': 'Sales Inquiry',
-        'general': 'General Support'
-      }
-      return departmentNames[category] || 'General Support'
-    },
-
-    getInitials(name) {
+    const getInitials = (name) => {
       if (!name) return '?'
       return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+    }
+
+    return {
+      loading,
+      responses,
+      replyMessage,
+      isSubmitting,
+      canReply,
+      loadResponses,
+      submitReply,
+      getStatusBadgeClass,
+      formatStatus,
+      formatDate,
+      getDepartmentName,
+      getInitials
     }
   }
 }

@@ -11,19 +11,22 @@ class AddTicketResponseRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Only allow customers to add responses to their own tickets
+        // Only customers can add responses through this endpoint
         return $this->user() && $this->user()->isCustomer();
     }
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'message' => ['required', 'string', 'min:5'],
+            'message' => [
+                'required',
+                'string',
+                'min:10',
+                'max:1000'
+            ]
         ];
     }
 
@@ -33,8 +36,9 @@ class AddTicketResponseRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'message.required' => 'Response message is required.',
-            'message.min' => 'Response message must be at least 5 characters.',
+            'message.required' => 'Please provide a message for your response.',
+            'message.min' => 'Response message must be at least 10 characters long.',
+            'message.max' => 'Response message cannot exceed 1000 characters.'
         ];
     }
 
@@ -44,7 +48,17 @@ class AddTicketResponseRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'message' => 'response message',
+            'message' => 'response message'
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'message' => trim($this->message ?? '')
+        ]);
     }
 }

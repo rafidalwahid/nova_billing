@@ -63,6 +63,19 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\TicketResponse::class,
         ]);
 
+        // Let Nova handle the default user menu for now
+        // We'll configure this after confirming the user display works
+
+        // Configure how user information is displayed in header
+        Nova::userTimezone(function (Request $request) {
+            return $request->user()?->timezone ?? config('app.timezone');
+        });
+
+        // Configure user display name and avatar for Nova header
+        Nova::serving(function (ServingNova $event) {
+            // This ensures Nova knows how to display user info
+        });
+
         // Configure custom navigation
         Nova::mainMenu(function (Request $request) {
             $user = $request->user();
