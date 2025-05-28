@@ -1,37 +1,42 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-all duration-500">
     <Head title="My Support" />
 
     <!-- Main Content Area -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
       <!-- Filters -->
-      <TicketFilters
-        v-model:searchQuery="searchQuery"
-        v-model:statusFilter="statusFilter"
-        v-model:departmentFilter="departmentFilter"
-        :totalTickets="totalTickets"
-        @createTicket="openWizard"
-        @update:searchQuery="handleSearch"
-        @update:statusFilter="handleFilterChange"
-        @update:departmentFilter="handleFilterChange"
-      />
+      <div class="transform transition-all duration-300 hover:scale-[1.01]">
+        <TicketFilters
+          v-model:searchQuery="searchQuery"
+          v-model:statusFilter="statusFilter"
+          v-model:departmentFilter="departmentFilter"
+          :totalTickets="totalTickets"
+          @createTicket="openWizard"
+          @update:searchQuery="handleSearch"
+          @update:statusFilter="handleFilterChange"
+          @update:departmentFilter="handleFilterChange"
+        />
+      </div>
 
       <!-- Ticket List -->
-      <TicketList
-        :tickets="tickets"
-        :loading="loading"
-        :pagination="pagination"
-        :totalTickets="totalTickets"
-        @viewTicket="viewTicketDetails"
-        @changePage="loadTickets"
-        @createTicket="openWizard"
-      />
+      <div class="transform transition-all duration-300 hover:scale-[1.005]">
+        <TicketList
+          :tickets="tickets"
+          :loading="loading"
+          :pagination="pagination"
+          :totalTickets="totalTickets"
+          @viewTicket="viewTicketDetails"
+          @changePage="loadTickets"
+          @createTicket="openWizard"
+        />
+      </div>
 
       <!-- Loading State -->
-      <LoadingSpinner
-        v-if="loading && tickets.length === 0"
-        message="Loading tickets..."
-      />
+      <div v-if="loading && tickets.length === 0" class="transform transition-all duration-300">
+        <LoadingSpinner
+          message="Loading your support tickets"
+        />
+      </div>
     </div>
 
     <!-- Ticket Creation Wizard -->

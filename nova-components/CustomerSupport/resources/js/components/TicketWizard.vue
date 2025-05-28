@@ -1,12 +1,22 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-gradient-to-br from-black/40 to-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-[95%] max-w-2xl max-h-[95vh] overflow-hidden flex flex-col m-4 border border-gray-200 dark:border-gray-600">
+  <div v-if="isOpen" class="fixed inset-0 bg-gradient-to-br from-black/50 to-black/70 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/20 w-full max-w-sm sm:max-w-2xl lg:max-w-3xl max-h-[98vh] sm:max-h-[95vh] overflow-hidden flex flex-col border border-gray-200 dark:border-gray-600 transform transition-all duration-300 scale-100">
       <!-- Header -->
-      <div class="flex justify-between items-center p-8 border-b border-gray-200 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-700">
-        <h2 class="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
-          Create New Support Ticket
-        </h2>
-        <button @click="closeWizard" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-200">
+      <div class="flex justify-between items-center p-4 sm:p-6 lg:p-8 border-b border-gray-200 dark:border-gray-600 bg-gradient-to-r from-emerald-50 via-blue-50 to-indigo-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800">
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+              Create Support Ticket
+            </h2>
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:block">We're here to help you resolve any issues</p>
+          </div>
+        </div>
+        <button @click="closeWizard" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all duration-200 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0">
           <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -14,7 +24,7 @@
       </div>
 
       <!-- Progress Steps -->
-      <div class="px-8 py-6 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+      <div class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-200 dark:border-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50">
         <div class="flex items-center justify-between">
           <div
             v-for="(_, index) in steps"
@@ -23,27 +33,31 @@
             :class="{ 'flex-1': index < steps.length - 1 }"
           >
             <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 shadow-lg"
               :class="{
-                'bg-blue-500 text-white': index === currentStep,
-                'bg-green-500 text-white': index < currentStep,
-                'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400': index > currentStep
+                'bg-gradient-to-br from-emerald-500 to-blue-600 text-white shadow-emerald-200 dark:shadow-emerald-900/50': index === currentStep,
+                'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-emerald-200 dark:shadow-emerald-900/50': index < currentStep,
+                'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 shadow-gray-200 dark:shadow-gray-800': index > currentStep
               }"
             >
-              <span v-if="index < currentStep" class="text-white">✓</span>
-              <span v-else class="text-sm font-medium">{{ index + 1 }}</span>
+              <span v-if="index < currentStep" class="text-white">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <span v-else class="text-xs sm:text-sm font-bold">{{ index + 1 }}</span>
             </div>
-            <div v-if="index < steps.length - 1" class="flex-1 h-0.5 mx-4 bg-gray-200 dark:bg-gray-600" :class="{ 'bg-green-500': index < currentStep, 'bg-blue-500': index === currentStep }"></div>
+            <div v-if="index < steps.length - 1" class="flex-1 h-0.5 sm:h-1 mx-2 sm:mx-4 rounded-full transition-all duration-300" :class="{ 'bg-gradient-to-r from-emerald-400 to-emerald-600': index < currentStep, 'bg-gradient-to-r from-emerald-500 to-blue-600': index === currentStep, 'bg-gray-200 dark:bg-gray-600': index > currentStep }"></div>
           </div>
         </div>
-        <div class="flex justify-between mt-2">
+        <div class="flex justify-between mt-3 sm:mt-4">
           <span
             v-for="(step, index) in steps"
             :key="index"
-            class="text-xs font-medium flex-1 text-center px-1"
+            class="text-xs sm:text-sm font-semibold flex-1 text-center px-1 transition-all duration-300"
             :class="{
-              'text-blue-600 dark:text-blue-400': index === currentStep,
-              'text-green-600 dark:text-green-400': index < currentStep,
+              'text-emerald-600 dark:text-emerald-400': index === currentStep,
+              'text-emerald-600 dark:text-emerald-400': index < currentStep,
               'text-gray-500 dark:text-gray-400': index > currentStep
             }"
           >
@@ -54,7 +68,7 @@
       </div>
 
       <!-- Step Content -->
-      <div class="p-8 bg-white dark:bg-gray-800 min-h-[300px] max-h-[60vh] overflow-y-auto">
+      <div class="p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-800 min-h-[250px] sm:min-h-[300px] max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
         <!-- Step 1: Department Selection -->
         <div v-if="currentStep === 0" class="space-y-4">
           <h3 class="text-sm sm:text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
@@ -182,31 +196,73 @@
       </div>
 
       <!-- Footer Actions -->
-      <div class="flex justify-between items-center p-8 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 gap-4">
-        <button
-          v-if="currentStep > 0"
-          @click="previousStep"
-          class="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-8 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-lg hover:-translate-y-0.5"
-        >
-          Previous
-        </button>
-        <div class="flex-1"></div>
-        <button
-          v-if="currentStep < steps.length - 1"
-          @click="nextStep"
-          :disabled="!canProceed"
-          class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          Next
-        </button>
-        <button
-          v-if="currentStep === steps.length - 1"
-          @click="submitTicket"
-          :disabled="isSubmitting"
-          class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          {{ isSubmitting ? 'Creating...' : 'Create Ticket' }}
-        </button>
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 sm:p-6 lg:p-8 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-t border-gray-200 dark:border-gray-600 gap-3 sm:gap-6">
+        <!-- Mobile: Stack buttons vertically -->
+        <div class="flex flex-col sm:hidden gap-3">
+          <button
+            v-if="currentStep < steps.length - 1"
+            @click="nextStep"
+            :disabled="!canProceed"
+            class="w-full bg-gradient-to-r from-emerald-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold text-sm tracking-wide transition-all duration-300 shadow-lg hover:from-emerald-600 hover:to-blue-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next →
+          </button>
+          <button
+            v-if="currentStep === steps.length - 1"
+            @click="submitTicket"
+            :disabled="isSubmitting"
+            class="w-full bg-gradient-to-r from-emerald-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold text-sm tracking-wide transition-all duration-300 shadow-lg hover:from-emerald-600 hover:to-blue-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <span v-if="isSubmitting">
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </span>
+            {{ isSubmitting ? 'Creating...' : 'Create Ticket' }}
+          </button>
+          <button
+            v-if="currentStep > 0"
+            @click="previousStep"
+            class="w-full bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-semibold text-sm tracking-wide transition-all duration-300 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+          >
+            ← Previous
+          </button>
+        </div>
+
+        <!-- Desktop: Horizontal layout -->
+        <div class="hidden sm:flex sm:justify-between sm:items-center w-full">
+          <button
+            v-if="currentStep > 0"
+            @click="previousStep"
+            class="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 lg:px-8 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl lg:rounded-2xl font-semibold text-sm tracking-wide transition-all duration-300 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-lg"
+          >
+            ← Previous
+          </button>
+          <div class="flex-1"></div>
+          <button
+            v-if="currentStep < steps.length - 1"
+            @click="nextStep"
+            :disabled="!canProceed"
+            class="bg-gradient-to-r from-emerald-500 to-blue-600 text-white px-6 lg:px-8 py-3 rounded-xl lg:rounded-2xl font-semibold text-sm tracking-wide transition-all duration-300 shadow-lg hover:from-emerald-600 hover:to-blue-700 hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+          >
+            Next →
+          </button>
+          <button
+            v-if="currentStep === steps.length - 1"
+            @click="submitTicket"
+            :disabled="isSubmitting"
+            class="bg-gradient-to-r from-emerald-500 to-blue-600 text-white px-6 lg:px-8 py-3 rounded-xl lg:rounded-2xl font-semibold text-sm tracking-wide transition-all duration-300 shadow-lg hover:from-emerald-600 hover:to-blue-700 hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg flex items-center gap-2"
+          >
+            <span v-if="isSubmitting">
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </span>
+            {{ isSubmitting ? 'Creating Ticket...' : 'Create Ticket' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
