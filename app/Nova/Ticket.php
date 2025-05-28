@@ -64,6 +64,23 @@ class Ticket extends Resource
     }
 
     /**
+     * Build a "detail" query for the given resource.
+     */
+    public static function detailQuery(NovaRequest $request, $query)
+    {
+        return $query->with([
+            'customer',
+            'department',
+            'assignedTo',
+            'responses' => function ($query) {
+                $query->where('type', \App\Models\TicketResponse::TYPE_CUSTOMER)
+                      ->whereNotNull('attachments')
+                      ->where('attachments', '!=', '[]');
+            }
+        ]);
+    }
+
+    /**
      * Determine if the current user can view any resources.
      */
     public static function authorizedToViewAny(Request $request): bool
@@ -367,6 +384,59 @@ class Ticket extends Resource
                     }
                     return '<span class="text-green-600">' . $value . '</span>';
                 })
+                ->asHtml(),
+
+            Text::make('Customer Attachments', function () {
+                // Only load this on detail view and cache the result
+                static $attachmentCache = [];
+                $cacheKey = "ticket_{$this->id}_attachments";
+
+                if (isset($attachmentCache[$cacheKey])) {
+                    return $attachmentCache[$cacheKey];
+                }
+
+                // Use a more efficient query to get customer responses with attachments
+                $customerResponses = $this->responses()
+                    ->where('type', \App\Models\TicketResponse::TYPE_CUSTOMER)
+                    ->whereNotNull('attachments')
+                    ->where('attachments', '!=', '[]')
+                    ->get();
+
+                $totalAttachments = 0;
+                $attachmentFiles = [];
+
+                foreach ($customerResponses as $response) {
+                    if ($response->attachments && is_array($response->attachments)) {
+                        $totalAttachments += count($response->attachments);
+                        foreach ($response->attachments as $index => $attachment) {
+                            $name = $attachment['original_name'] ?? 'Unknown';
+                            $size = isset($attachment['file_size']) ?
+                                \App\Services\FileUploadService::formatFileSize($attachment['file_size']) : '';
+
+                            // Use admin download route for better control
+                            $adminDownloadUrl = "/admin/download-attachment/{$response->id}/{$index}";
+
+                            $attachmentFiles[] = "<div class='flex items-center justify-between py-1 border-b border-gray-100'>" .
+                                               "<div class='flex items-center'>" .
+                                               "<span class='text-blue-500 mr-2'>📎</span>" .
+                                               "<a href='{$adminDownloadUrl}' target='_blank' class='text-blue-600 hover:text-blue-800 font-medium'>{$name}</a>" .
+                                               ($size ? " <span class='text-gray-500 ml-2'>({$size})</span>" : '') .
+                                               "</div>" .
+                                               "<a href='{$adminDownloadUrl}' target='_blank' class='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'>Download</a>" .
+                                               "</div>";
+                        }
+                    }
+                }
+
+                $result = $totalAttachments === 0
+                    ? '<span class="text-gray-500">No customer attachments</span>'
+                    : "<div class='mb-3'><strong class='text-gray-700'>📎 {$totalAttachments} file(s) from customer:</strong></div>" .
+                      "<div class='bg-gray-50 border border-gray-200 rounded-lg p-3'>" . implode('', $attachmentFiles) . "</div>";
+
+                $attachmentCache[$cacheKey] = $result;
+                return $result;
+            })
+                ->onlyOnDetail()
                 ->asHtml(),
 
             Textarea::make('Internal Notes')

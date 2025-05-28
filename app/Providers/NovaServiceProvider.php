@@ -48,6 +48,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\CustomerOrder::class, // Customer-facing order resource
             \App\Nova\CustomerOrderItem::class, // Customer-facing order item resource
             \App\Nova\CustomerTicket::class, // Customer-facing ticket resource
+            \App\Nova\CustomerTicketResponse::class, // Customer-facing ticket response resource
             \App\Nova\Invoice::class,
             \App\Nova\InvoiceLine::class,
             \App\Nova\CustomerInvoice::class, // Customer-facing invoice resource
@@ -84,6 +85,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
                     \Laravel\Nova\Menu\MenuSection::make('Support', [
                         \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerTicket::class),
+                        \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerTicketResponse::class),
                     ])->icon('support')->collapsible(),
                 ];
             }

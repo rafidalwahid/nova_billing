@@ -8,7 +8,9 @@ use App\Models\AdminUser;
 use App\Models\Customer;
 use App\Models\User;
 use App\Events\TicketStatusChanged;
+use App\Notifications\TicketResponseNotification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -175,6 +177,11 @@ class TicketService
         // Log response addition
         $this->logCustomerResponseAdded($ticket, $user, 'customer');
 
+        // Send notification to assigned staff member
+        if ($ticket->assignedTo && $ticket->assignedTo->user) {
+            $ticket->assignedTo->user->notify(new TicketResponseNotification($ticket, $response, true));
+        }
+
         return $response->load(['user', 'adminUser']);
     }
 
@@ -283,6 +290,11 @@ class TicketService
 
         // Log the response
         $this->logResponseAdded($ticket, $response);
+
+        // Send notification to customer if this is a staff response (not internal)
+        if (!$response->is_internal && $ticket->customer && $ticket->customer->user) {
+            $ticket->customer->user->notify(new TicketResponseNotification($ticket, $response, false));
+        }
 
         return $response;
     }

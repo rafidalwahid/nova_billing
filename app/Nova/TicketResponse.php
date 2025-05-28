@@ -124,6 +124,71 @@ class TicketResponse extends Resource
                 ->rules('required')
                 ->rows(4),
 
+            Text::make('Attachments', function () {
+                if ($this->attachments && is_array($this->attachments)) {
+                    $count = count($this->attachments);
+                    if ($count === 1) {
+                        $attachment = $this->attachments[0];
+                        $name = $attachment['original_name'] ?? 'Unknown';
+                        $size = isset($attachment['file_size']) ?
+                            \App\Services\FileUploadService::formatFileSize($attachment['file_size']) : '';
+                        return $name . ($size ? " ({$size})" : '');
+                    } else {
+                        return "{$count} files attached";
+                    }
+                }
+                return 'No attachments';
+            })
+                ->onlyOnIndex(),
+
+            Text::make('Customer Files', function () {
+                // Cache the result to avoid repeated processing
+                static $fileCache = [];
+                $cacheKey = "response_{$this->id}_files";
+
+                if (isset($fileCache[$cacheKey])) {
+                    return $fileCache[$cacheKey];
+                }
+
+                if (!$this->attachments || !is_array($this->attachments) || empty($this->attachments)) {
+                    $result = '<span class="text-gray-500">No files attached by customer</span>';
+                    $fileCache[$cacheKey] = $result;
+                    return $result;
+                }
+
+                $attachmentList = [];
+                foreach ($this->attachments as $index => $attachment) {
+                    $name = $attachment['original_name'] ?? 'Unknown';
+                    $size = isset($attachment['file_size']) ?
+                        \App\Services\FileUploadService::formatFileSize($attachment['file_size']) : '';
+                    $downloadUrl = $attachment['download_url'] ?? '#';
+                    $uploadedAt = $attachment['uploaded_at'] ?? 'Unknown';
+
+                    // Use admin download route for better control
+                    $adminDownloadUrl = "/admin/download-attachment/{$this->id}/{$index}";
+
+                    $attachmentList[] = "<div class='border border-gray-200 rounded-lg p-3 mb-3 bg-gray-50'>" .
+                                      "<div class='flex items-center justify-between mb-2'>" .
+                                      "<div class='flex items-center'>" .
+                                      "<span class='text-blue-500 mr-2'>📎</span>" .
+                                      "<a href='{$adminDownloadUrl}' target='_blank' class='text-blue-600 hover:text-blue-800 font-medium text-sm'>{$name}</a>" .
+                                      "</div>" .
+                                      ($size ? "<span class='text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded'>{$size}</span>" : '') .
+                                      "</div>" .
+                                      "<div class='flex items-center justify-between'>" .
+                                      "<div class='text-xs text-gray-500'>Uploaded: {$uploadedAt}</div>" .
+                                      "<a href='{$adminDownloadUrl}' target='_blank' class='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'>Download</a>" .
+                                      "</div>" .
+                                      "</div>";
+                }
+
+                $result = "<div class='space-y-2'>" . implode('', $attachmentList) . "</div>";
+                $fileCache[$cacheKey] = $result;
+                return $result;
+            })
+                ->onlyOnDetail()
+                ->asHtml(),
+
             Boolean::make('Internal Note', 'is_internal')
                 ->help('Internal notes are only visible to staff members'),
 
@@ -185,6 +250,9 @@ class TicketResponse extends Resource
      */
     public function actions(NovaRequest $request)
     {
-        return [];
+        return [
+            \App\Nova\Actions\AdminAddAttachment::make(),
+            \App\Nova\Actions\AdminRemoveAttachment::make(),
+        ];
     }
 }

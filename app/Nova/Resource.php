@@ -2,6 +2,7 @@
 
 namespace App\Nova;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource as NovaResource;
