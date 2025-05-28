@@ -171,8 +171,9 @@ class Ticket extends Model
         parent::boot();
 
         static::creating(function ($ticket) {
+            // Only generate ticket number if not already provided
             if (empty($ticket->ticket_number)) {
-                $ticket->ticket_number = 'TKT-' . str_pad(static::max('id') + 1, 6, '0', STR_PAD_LEFT);
+                $ticket->ticket_number = static::generateUniqueTicketNumber();
             }
 
             // Auto-assign department based on category
@@ -329,5 +330,34 @@ class Ticket extends Model
                 default => 'secondary',
             },
         );
+    }
+
+    /**
+     * Generate a unique ticket number using atomic database operations.
+     * This method ensures no duplicate ticket numbers across all creation methods.
+     *
+     * @return string
+     */
+    public static function generateUniqueTicketNumber(): string
+    {
+        return \DB::transaction(function () {
+            // Get the next sequential number atomically
+            $lastTicket = static::lockForUpdate()
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $nextNumber = $lastTicket ? $lastTicket->id + 1 : 1;
+
+            // Generate ticket number with consistent format
+            $ticketNumber = 'TKT-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+
+            // Double-check uniqueness (safety net)
+            while (static::where('ticket_number', $ticketNumber)->exists()) {
+                $nextNumber++;
+                $ticketNumber = 'TKT-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+            }
+
+            return $ticketNumber;
+        });
     }
 }

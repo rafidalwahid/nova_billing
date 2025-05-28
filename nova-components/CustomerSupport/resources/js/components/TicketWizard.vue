@@ -1,70 +1,73 @@
 <template>
-  <div v-if="isOpen" class="wizard-overlay">
-    <div class="wizard-modal">
+  <div v-if="isOpen" class="fixed inset-0 bg-gradient-to-br from-black/40 to-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-[95%] max-w-2xl max-h-[95vh] overflow-hidden flex flex-col m-4 border border-gray-200 dark:border-gray-600">
       <!-- Header -->
-      <div class="wizard-header">
-        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+      <div class="flex justify-between items-center p-8 border-b border-gray-200 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-700">
+        <h2 class="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
           Create New Support Ticket
         </h2>
-        <button @click="closeWizard" class="wizard-close-btn">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button @click="closeWizard" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-200">
+          <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
       <!-- Progress Steps -->
-      <div class="wizard-progress">
+      <div class="px-8 py-6 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
         <div class="flex items-center justify-between">
           <div
-            v-for="(step, index) in steps"
+            v-for="(_, index) in steps"
             :key="index"
             class="flex items-center"
             :class="{ 'flex-1': index < steps.length - 1 }"
           >
             <div
-              class="wizard-step-circle"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200"
               :class="{
-                'wizard-step-active': index === currentStep,
-                'wizard-step-completed': index < currentStep,
-                'wizard-step-pending': index > currentStep
+                'bg-blue-500 text-white': index === currentStep,
+                'bg-green-500 text-white': index < currentStep,
+                'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400': index > currentStep
               }"
             >
               <span v-if="index < currentStep" class="text-white">✓</span>
               <span v-else class="text-sm font-medium">{{ index + 1 }}</span>
             </div>
-            <div v-if="index < steps.length - 1" class="wizard-step-line"></div>
+            <div v-if="index < steps.length - 1" class="flex-1 h-0.5 mx-4 bg-gray-200 dark:bg-gray-600" :class="{ 'bg-green-500': index < currentStep, 'bg-blue-500': index === currentStep }"></div>
           </div>
         </div>
         <div class="flex justify-between mt-2">
           <span
             v-for="(step, index) in steps"
             :key="index"
-            class="text-xs font-medium"
+            class="text-xs font-medium flex-1 text-center px-1"
             :class="{
               'text-blue-600 dark:text-blue-400': index === currentStep,
               'text-green-600 dark:text-green-400': index < currentStep,
               'text-gray-500 dark:text-gray-400': index > currentStep
             }"
           >
-            {{ step.title }}
+            <span class="hidden sm:inline">{{ step.title }}</span>
+            <span class="sm:hidden">{{ step.title.substring(0, 4) }}</span>
           </span>
         </div>
       </div>
 
       <!-- Step Content -->
-      <div class="wizard-content">
+      <div class="p-8 bg-white dark:bg-gray-800 min-h-[300px] max-h-[60vh] overflow-y-auto">
         <!-- Step 1: Department Selection -->
-        <div v-if="currentStep === 0" class="wizard-step">
-          <h3 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
+        <div v-if="currentStep === 0" class="space-y-4">
+          <h3 class="text-sm sm:text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
             Which department can help you?
           </h3>
-          <div class="grid grid-cols-1 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label
               v-for="dept in departments"
               :key="dept.value"
-              class="wizard-radio-card"
-              :class="{ 'wizard-radio-selected': formData.department === dept.value }"
+              class="relative cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:shadow-md"
+              :class="formData.department === dept.value
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500'
+                : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500'"
             >
               <input
                 type="radio"
@@ -73,10 +76,10 @@
                 class="sr-only"
               >
               <div class="flex items-center">
-                <div class="wizard-radio-icon">{{ dept.icon }}</div>
-                <div>
-                  <div class="font-medium text-gray-900 dark:text-gray-100">{{ dept.name }}</div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">{{ dept.description }}</div>
+                <div class="mr-3 text-lg sm:text-xl">{{ dept.icon }}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{{ dept.name }}</div>
+                  <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-tight">{{ dept.description }}</div>
                 </div>
               </div>
             </label>
@@ -84,14 +87,14 @@
         </div>
 
         <!-- Step 2: Priority & Subject -->
-        <div v-if="currentStep === 1" class="wizard-step">
-          <h3 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
+        <div v-if="currentStep === 1" class="space-y-4">
+          <h3 class="text-sm sm:text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
             Tell us about your issue
           </h3>
 
           <div class="mb-4">
-            <label class="wizard-label">Priority Level</label>
-            <select v-model="formData.priority" class="form-control">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority Level</label>
+            <select v-model="formData.priority" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
               <option value="low">Low - General question or request</option>
               <option value="medium">Medium - Issue affecting my work</option>
               <option value="high">High - Urgent issue needs quick resolution</option>
@@ -99,12 +102,12 @@
           </div>
 
           <div class="mb-4">
-            <label class="wizard-label">Subject</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
             <input
               type="text"
               v-model="formData.subject"
               placeholder="Brief description of your issue"
-              class="form-control"
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               maxlength="100"
             >
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -114,17 +117,17 @@
         </div>
 
         <!-- Step 3: Description & Details -->
-        <div v-if="currentStep === 2" class="wizard-step">
-          <h3 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
+        <div v-if="currentStep === 2" class="space-y-4">
+          <h3 class="text-sm sm:text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
             Provide more details
           </h3>
 
           <div class="mb-4">
-            <label class="wizard-label">Description</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
             <textarea
               v-model="formData.description"
               placeholder="Please describe your issue in detail. Include any error messages, steps to reproduce, or relevant information."
-              class="form-control"
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-vertical"
               rows="6"
               maxlength="1000"
             ></textarea>
@@ -134,12 +137,12 @@
           </div>
 
           <div class="mb-4">
-            <label class="wizard-label">Contact Email</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Email</label>
             <input
               type="email"
               v-model="formData.email"
               placeholder="your@email.com"
-              class="form-control"
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             >
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               We'll send updates to this email address
@@ -148,42 +151,42 @@
         </div>
 
         <!-- Step 4: Review & Submit -->
-        <div v-if="currentStep === 3" class="wizard-step">
-          <h3 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
+        <div v-if="currentStep === 3" class="space-y-4">
+          <h3 class="text-sm sm:text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
             Review your ticket
           </h3>
 
-          <div class="wizard-review">
-            <div class="wizard-review-item">
-              <span class="wizard-review-label">Department:</span>
-              <span class="wizard-review-value">{{ getDepartmentName(formData.department) }}</span>
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4">
+            <div class="flex justify-between items-start py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Department:</span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ getDepartmentName(formData.department) }}</span>
             </div>
-            <div class="wizard-review-item">
-              <span class="wizard-review-label">Priority:</span>
-              <span class="wizard-review-value">{{ getPriorityName(formData.priority) }}</span>
+            <div class="flex justify-between items-start py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Priority:</span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ getPriorityName(formData.priority) }}</span>
             </div>
-            <div class="wizard-review-item">
-              <span class="wizard-review-label">Subject:</span>
-              <span class="wizard-review-value">{{ formData.subject }}</span>
+            <div class="flex justify-between items-start py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Subject:</span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ formData.subject }}</span>
             </div>
-            <div class="wizard-review-item">
-              <span class="wizard-review-label">Email:</span>
-              <span class="wizard-review-value">{{ formData.email }}</span>
+            <div class="flex justify-between items-start py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Email:</span>
+              <span class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ formData.email }}</span>
             </div>
-            <div class="wizard-review-item">
-              <span class="wizard-review-label">Description:</span>
-              <div class="wizard-review-description">{{ formData.description }}</div>
+            <div class="py-2">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2">Description:</span>
+              <div class="text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600 whitespace-pre-wrap">{{ formData.description }}</div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Footer Actions -->
-      <div class="wizard-footer">
+      <div class="flex justify-between items-center p-8 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 gap-4">
         <button
           v-if="currentStep > 0"
           @click="previousStep"
-          class="wizard-btn-secondary"
+          class="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-8 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-lg hover:-translate-y-0.5"
         >
           Previous
         </button>
@@ -192,8 +195,7 @@
           v-if="currentStep < steps.length - 1"
           @click="nextStep"
           :disabled="!canProceed"
-          class="wizard-btn-primary"
-          :class="{ 'wizard-btn-disabled': !canProceed }"
+          class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
         >
           Next
         </button>
@@ -201,8 +203,7 @@
           v-if="currentStep === steps.length - 1"
           @click="submitTicket"
           :disabled="isSubmitting"
-          class="wizard-btn-primary"
-          :class="{ 'wizard-btn-disabled': isSubmitting }"
+          class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
         >
           {{ isSubmitting ? 'Creating...' : 'Create Ticket' }}
         </button>

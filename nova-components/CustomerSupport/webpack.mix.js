@@ -7,6 +7,5 @@ mix
   .setPublicPath('dist')
   .js('resources/js/tool.js', 'js')
   .vue({ version: 3 })
-  .css('resources/css/tool.css', 'css')
   .nova('billing/customer-support')
   .version()

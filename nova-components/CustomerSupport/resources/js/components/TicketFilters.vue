@@ -1,5 +1,5 @@
 <template>
-  <Card class="mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-lg mb-6">
     <div class="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div class="flex flex-col sm:flex-row gap-4">
         <!-- Search Input -->
@@ -9,7 +9,7 @@
             @input="$emit('update:searchQuery', $event.target.value)"
             type="text"
             placeholder="Search tickets..."
-            class="form-control form-input form-input-bordered w-full sm:w-64"
+            class="w-full sm:w-64 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 focus:outline-none"
           />
         </div>
 
@@ -17,7 +17,7 @@
         <select
           :value="statusFilter"
           @change="$emit('update:statusFilter', $event.target.value)"
-          class="form-control form-select form-select-bordered w-full sm:w-48"
+          class="w-full sm:w-48 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 transition-all duration-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 focus:outline-none cursor-pointer"
         >
           <option value="">All Statuses</option>
           <option value="open">Open</option>
@@ -30,7 +30,7 @@
         <select
           :value="departmentFilter"
           @change="$emit('update:departmentFilter', $event.target.value)"
-          class="form-control form-select form-select-bordered w-full sm:w-48"
+          class="w-full sm:w-48 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 transition-all duration-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 focus:outline-none cursor-pointer"
         >
           <option value="">All Departments</option>
           <option value="billing">Billing Support</option>
@@ -46,19 +46,19 @@
         </div>
         <button
           @click="$emit('createTicket')"
-          class="btn-primary"
+          class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold text-sm tracking-wide transition-all duration-200 shadow-sm hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm whitespace-nowrap"
         >
           Create New Ticket
         </button>
       </div>
     </div>
-  </Card>
+  </div>
 </template>
 
 <script>
 export default {
   name: 'TicketFilters',
-  
+
   props: {
     searchQuery: {
       type: String,
@@ -80,7 +80,7 @@ export default {
 
   emits: [
     'update:searchQuery',
-    'update:statusFilter', 
+    'update:statusFilter',
     'update:departmentFilter',
     'createTicket'
   ]

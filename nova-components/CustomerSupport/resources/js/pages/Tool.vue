@@ -1,25 +1,26 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <Head title="My Support" />
 
-    <Heading class="mb-6">My Support</Heading>
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Ticket List -->
+      <TicketList
+        :tickets="tickets"
+        :loading="loading"
+        :pagination="pagination"
+        :totalTickets="totalTickets"
+        @viewTicket="viewTicketDetails"
+        @changePage="loadTickets"
+        @createTicket="openWizard"
+      />
 
-    <!-- Ticket List -->
-    <TicketList
-      :tickets="tickets"
-      :loading="loading"
-      :pagination="pagination"
-      :totalTickets="totalTickets"
-      @viewTicket="viewTicketDetails"
-      @changePage="loadTickets"
-      @createTicket="openWizard"
-    />
-
-    <!-- Loading State -->
-    <LoadingSpinner
-      v-if="loading && tickets.length === 0"
-      message="Loading tickets..."
-    />
+      <!-- Loading State -->
+      <LoadingSpinner
+        v-if="loading && tickets.length === 0"
+        message="Loading tickets..."
+      />
+    </div>
 
     <!-- Ticket Creation Wizard -->
     <TicketWizard
@@ -56,10 +57,18 @@ export default {
       },
       totalTickets: 0,
       showWizard: false,
+      searchQuery: '',
+      statusFilter: '',
+      departmentFilter: '',
+      searchTimeout: null,
     }
   },
 
-
+  computed: {
+    openTicketsCount() {
+      return this.tickets.filter(ticket => ticket.status === 'open' || ticket.status === 'in_progress').length
+    }
+  },
 
   mounted() {
     this.loadTickets()
@@ -70,11 +79,24 @@ export default {
       try {
         this.loading = true
 
+        // Build query parameters
+        const params = { page }
+
+        if (this.searchQuery.trim()) {
+          params.search = this.searchQuery.trim()
+        }
+
+        if (this.statusFilter) {
+          params.status = this.statusFilter
+        }
+
+        if (this.departmentFilter) {
+          params.department = this.departmentFilter
+        }
+
         // Make API request using Nova.request
         const response = await Nova.request().get('/nova-vendor/customer-support/tickets', {
-          params: {
-            page
-          }
+          params
         })
 
         this.tickets = response.data.data || []
@@ -121,6 +143,23 @@ export default {
       this.loadTickets(1)
       // Show success message
       this.$toasted?.success('Support ticket created successfully!')
+    },
+
+    handleSearch() {
+      // Clear existing timeout
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout)
+      }
+
+      // Debounce search to avoid too many API calls
+      this.searchTimeout = setTimeout(() => {
+        this.loadTickets(1) // Reset to first page when searching
+      }, 500)
+    },
+
+    handleFilterChange() {
+      // Immediately apply filter changes
+      this.loadTickets(1) // Reset to first page when filtering
     },
   }
 }
