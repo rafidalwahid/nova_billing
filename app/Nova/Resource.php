@@ -2,7 +2,6 @@
 
 namespace App\Nova;
 
-use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource as NovaResource;
@@ -13,7 +12,7 @@ abstract class Resource extends NovaResource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
         return $query;
     }
@@ -29,7 +28,7 @@ abstract class Resource extends NovaResource
     /**
      * Build a "detail" query for the given resource.
      */
-    public static function detailQuery(NovaRequest $request, Builder $query): Builder
+    public static function detailQuery(NovaRequest $request, $query)
     {
         return parent::detailQuery($request, $query);
     }
@@ -39,7 +38,7 @@ abstract class Resource extends NovaResource
      *
      * This query determines which instances of the model may be attached to other resources.
      */
-    public static function relatableQuery(NovaRequest $request, Builder $query): Builder
+    public static function relatableQuery(NovaRequest $request, $query)
     {
         return parent::relatableQuery($request, $query);
     }
@@ -63,6 +62,12 @@ abstract class Resource extends NovaResource
                 \App\Nova\Customer::class,
                 \App\Nova\CustomerOrder::class,
                 \App\Nova\CustomerOrderItem::class,
+                \App\Nova\CustomerInvoice::class,
+                \App\Nova\CustomerInvoiceLine::class,
+                \App\Nova\CustomerTicket::class,
+                \App\Nova\CustomerPayment::class,
+                \App\Nova\CustomerSubscriptionItem::class,
+                \App\Nova\Ticket::class, // For backward compatibility
             ];
 
             if (!in_array(static::class, $allowedCustomerResources)) {

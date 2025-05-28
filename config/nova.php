@@ -95,6 +95,7 @@ return [
         'web',
         \Laravel\Nova\Http\Middleware\HandleInertiaRequests::class,
         'nova:serving',
+        'throttle:60,1', // Rate limit Nova routes
     ],
 
     'api_middleware' => [
@@ -103,6 +104,7 @@ return [
         // \Laravel\Nova\Http\Middleware\AuthenticateSession::class,
         // \Laravel\Nova\Http\Middleware\EnsureEmailIsVerified::class,
         \Laravel\Nova\Http\Middleware\Authorize::class,
+        'throttle:120,1', // Higher rate limit for API calls
     ],
 
     'asset_middleware' => [

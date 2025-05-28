@@ -12,7 +12,6 @@ use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class CustomerOrder extends Resource
 {
@@ -141,7 +140,7 @@ class CustomerOrder extends Resource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
         return self::applyCustomerFilter($request, $query->with(['customer', 'items', 'invoice']));
     }
@@ -149,7 +148,7 @@ class CustomerOrder extends Resource
     /**
      * Build a "detail" query for the given resource.
      */
-    public static function detailQuery(NovaRequest $request, Builder $query): Builder
+    public static function detailQuery(NovaRequest $request, $query)
     {
         return self::applyCustomerFilter($request, $query->with(['customer', 'items.product', 'invoice']));
     }
@@ -157,7 +156,7 @@ class CustomerOrder extends Resource
     /**
      * Build a "relatable" query for the given resource.
      */
-    public static function relatableQuery(NovaRequest $request, Builder $query): Builder
+    public static function relatableQuery(NovaRequest $request, $query)
     {
         return self::indexQuery($request, $query);
     }
@@ -236,7 +235,7 @@ class CustomerOrder extends Resource
     /**
      * Apply customer filter to query.
      */
-    private static function applyCustomerFilter(NovaRequest $request, Builder $query): Builder
+    private static function applyCustomerFilter(NovaRequest $request, $query)
     {
         if (self::isCustomerUser($request)) {
             return $query->where('customer_id', $request->user()->userable_id);

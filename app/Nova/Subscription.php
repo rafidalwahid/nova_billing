@@ -15,7 +15,6 @@ use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Subscription as SubscriptionModel;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class Subscription extends Resource
 {
@@ -52,7 +51,7 @@ class Subscription extends Resource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
         return $query->with(['customer', 'product', 'productPricing']);
     }

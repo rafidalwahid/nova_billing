@@ -11,6 +11,9 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Subscription;
 use App\Models\Ticket;
+use App\Models\Product;
+use App\Models\Server;
+use App\Models\HostingAccount;
 use App\Policies\InvoicePolicy;
 use App\Policies\InvoiceLinePolicy;
 use App\Policies\PaymentPolicy;
@@ -18,6 +21,9 @@ use App\Policies\CustomerPolicy;
 use App\Policies\OrderPolicy;
 use App\Policies\SubscriptionPolicy;
 use App\Policies\TicketPolicy;
+use App\Policies\ProductPolicy;
+use App\Policies\ServerPolicy;
+use App\Policies\HostingAccountPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -34,6 +40,9 @@ class AuthServiceProvider extends ServiceProvider
         Order::class => OrderPolicy::class,
         Subscription::class => SubscriptionPolicy::class,
         Ticket::class => TicketPolicy::class,
+        Product::class => ProductPolicy::class,
+        Server::class => ServerPolicy::class,
+        HostingAccount::class => HostingAccountPolicy::class,
     ];
 
     /**

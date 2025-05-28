@@ -8,7 +8,6 @@ use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class HostingAccount extends Resource
 {
@@ -45,7 +44,7 @@ class HostingAccount extends Resource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
         return $query->with(['customer', 'server', 'product']);
     }

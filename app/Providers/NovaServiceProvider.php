@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Gate;
 use Laravel\Fortify\Features;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
-use Laravel\Nova\Events\ServingNova;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -48,6 +47,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\OrderItem::class,
             \App\Nova\CustomerOrder::class, // Customer-facing order resource
             \App\Nova\CustomerOrderItem::class, // Customer-facing order item resource
+            \App\Nova\CustomerTicket::class, // Customer-facing ticket resource
             \App\Nova\Invoice::class,
             \App\Nova\InvoiceLine::class,
             \App\Nova\CustomerInvoice::class, // Customer-facing invoice resource
@@ -63,17 +63,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             \App\Nova\TicketResponse::class,
         ]);
 
-        // Let Nova handle the default user menu for now
-        // We'll configure this after confirming the user display works
-
-        // Configure how user information is displayed in header
+        // Configure user timezone for Nova header
         Nova::userTimezone(function (Request $request) {
             return $request->user()?->timezone ?? config('app.timezone');
-        });
-
-        // Configure user display name and avatar for Nova header
-        Nova::serving(function (ServingNova $event) {
-            // This ensures Nova knows how to display user info
         });
 
         // Configure custom navigation
@@ -91,7 +83,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
                     ])->icon('user-circle')->collapsible(),
 
                     \Laravel\Nova\Menu\MenuSection::make('Support', [
-                        \Laravel\Nova\Menu\MenuItem::externalLink('Customer Support', '/nova/customer-support'),
+                        \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\CustomerTicket::class),
                     ])->icon('support')->collapsible(),
                 ];
             }
@@ -176,8 +168,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
             ->register();
     }
 
-
-
     /**
      * Get the dashboards that should be listed in the Nova sidebar.
      */
@@ -194,15 +184,7 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      */
     public function tools(): array
     {
-        \Log::info('NovaServiceProvider tools() method called');
-
-        $tools = [
-            new \Billing\CustomerSupport\CustomerSupport,
-        ];
-
-        \Log::info('Tools registered', ['count' => count($tools)]);
-
-        return $tools;
+        return [];
     }
 
 

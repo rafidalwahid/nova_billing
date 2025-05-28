@@ -10,7 +10,6 @@ use Laravel\Nova\Fields\Currency;
 use Laravel\Nova\Fields\Number;
 use Laravel\Nova\Fields\BelongsTo;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class CustomerOrderItem extends Resource
 {
@@ -99,7 +98,7 @@ class CustomerOrderItem extends Resource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
         return self::applyCustomerFilter($request, $query->with(['order', 'product']));
     }
@@ -107,7 +106,7 @@ class CustomerOrderItem extends Resource
     /**
      * Build a "detail" query for the given resource.
      */
-    public static function detailQuery(NovaRequest $request, Builder $query): Builder
+    public static function detailQuery(NovaRequest $request, $query)
     {
         return self::indexQuery($request, $query);
     }
@@ -182,7 +181,7 @@ class CustomerOrderItem extends Resource
     /**
      * Apply customer filter to query.
      */
-    private static function applyCustomerFilter(NovaRequest $request, Builder $query): Builder
+    private static function applyCustomerFilter(NovaRequest $request, $query)
     {
         if (self::isCustomerUser($request)) {
             return $query->whereHas('order', function ($orderQuery) use ($request) {

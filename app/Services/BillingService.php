@@ -6,35 +6,78 @@ use App\Models\Subscription;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\Order;
+use App\Exceptions\BillingException;
+use App\Exceptions\InvoiceGenerationException;
+use App\Exceptions\TaxCalculationException;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class BillingService
 {
+    protected TaxCalculationService $taxService;
+
+    public function __construct(TaxCalculationService $taxService)
+    {
+        $this->taxService = $taxService;
+    }
     /**
      * Calculate order totals including tax.
      */
     public function calculateOrderTotals(Order $order): array
     {
-        $subtotal = $order->items()->sum('total_price');
-        $taxAmount = $this->calculateTaxAmount($subtotal);
-        $total = $subtotal + $taxAmount;
+        try {
+            $subtotal = $order->items()->sum('total_price');
 
-        return [
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
-            'total' => $total,
-        ];
+            if ($subtotal <= 0) {
+                throw new BillingException('Order subtotal must be greater than zero', 'INVALID_ORDER_TOTAL', [
+                    'order_id' => $order->id,
+                    'subtotal' => $subtotal,
+                ]);
+            }
+
+            // Use the new tax calculation service
+            $customer = $order->customer;
+            if (!$customer) {
+                throw new BillingException('Order must have a customer', 'MISSING_CUSTOMER', [
+                    'order_id' => $order->id,
+                ]);
+            }
+
+            $taxCalculation = $this->taxService->calculateTax($customer, $subtotal);
+
+            $total = $subtotal + $taxCalculation['tax_amount'];
+
+            return [
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxCalculation['tax_amount'],
+                'tax_rate' => $taxCalculation['tax_rate'],
+                'tax_description' => $taxCalculation['tax_description'],
+                'tax_jurisdiction' => $taxCalculation['tax_jurisdiction'],
+                'total' => $total,
+            ];
+        } catch (TaxCalculationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            throw new BillingException('Failed to calculate order totals: ' . $e->getMessage(), 'ORDER_CALCULATION_FAILED', [
+                'order_id' => $order->id,
+                'original_error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
-     * Calculate tax amount for a given subtotal.
+     * Calculate tax amount for a given subtotal and customer.
+     * @deprecated Use TaxCalculationService directly instead
      */
-    public function calculateTaxAmount(float $subtotal): float
+    public function calculateTaxAmount(float $subtotal, $customer = null): float
     {
-        // Simple 10% tax rate for now
-        // In production, this would be more complex based on location, product type, etc.
+        if ($customer) {
+            $taxCalculation = $this->taxService->calculateTax($customer, $subtotal);
+            return $taxCalculation['tax_amount'];
+        }
+
+        // Fallback for backward compatibility
         return $subtotal * 0.10;
     }
 

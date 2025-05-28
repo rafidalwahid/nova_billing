@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Traits\Auditable;
 
 class Payment extends Model
 {
+    use Auditable;
     // Status constants
     const STATUS_PENDING = 'pending';
     const STATUS_COMPLETED = 'completed';

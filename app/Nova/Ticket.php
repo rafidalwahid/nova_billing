@@ -14,7 +14,6 @@ use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\Boolean;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class Ticket extends Resource
 {
@@ -51,9 +50,117 @@ class Ticket extends Resource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
-        return $query->with(['customer', 'department', 'assignedTo']);
+        $query = $query->with(['customer', 'department', 'assignedTo']);
+
+        // If user is a customer, only show their own tickets
+        $user = $request->user();
+        if ($user && $user->isCustomer()) {
+            $query->where('customer_id', $user->userable->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Determine if the current user can view any resources.
+     */
+    public static function authorizedToViewAny(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers can view tickets (filtered to their own)
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users can view all tickets
+        return true;
+    }
+
+    /**
+     * Determine if the current user can view the resource.
+     */
+    public function authorizedToView(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers can only view their own tickets
+        if ($user->isCustomer()) {
+            return $this->resource->customer_id === $user->userable->id;
+        }
+
+        // Staff users can view all tickets
+        return true;
+    }
+
+    /**
+     * Determine if the current user can create new resources.
+     */
+    public static function authorizedToCreate(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers can create tickets
+        if ($user->isCustomer()) {
+            return true;
+        }
+
+        // Staff users can create tickets
+        return true;
+    }
+
+    /**
+     * Determine if the current user can update the given resource.
+     */
+    public function authorizedToUpdate(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers cannot update tickets (only staff can)
+        if ($user->isCustomer()) {
+            return false;
+        }
+
+        // Staff users can update tickets
+        return true;
+    }
+
+    /**
+     * Determine if the current user can delete the given resource.
+     */
+    public function authorizedToDelete(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Customers cannot delete tickets
+        if ($user->isCustomer()) {
+            return false;
+        }
+
+        // Staff users can delete tickets
+        return true;
     }
 
     /**

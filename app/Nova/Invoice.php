@@ -14,7 +14,6 @@ use Laravel\Nova\Fields\Badge;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource;
 use App\Models\Invoice as InvoiceModel;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class Invoice extends Resource
 {
@@ -64,7 +63,7 @@ class Invoice extends Resource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
         return $query->with(['customer', 'order', 'payments']);
     }

@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use App\Traits\HasStatusColors;
+use App\Traits\Auditable;
 
 class Invoice extends Model
 {
-    use HasStatusColors;
+    use HasStatusColors, Auditable;
     // Status constants
     const STATUS_DRAFT = 'draft';
     const STATUS_SENT = 'sent';

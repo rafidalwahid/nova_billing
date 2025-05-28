@@ -15,7 +15,6 @@ use Laravel\Nova\Fields\HasMany;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class Customer extends Resource
 {
@@ -72,21 +71,45 @@ class Customer extends Resource
     /**
      * Build an "index" query for the given resource.
      */
-    public static function indexQuery(NovaRequest $request, Builder $query): Builder
+    public static function indexQuery(NovaRequest $request, $query)
     {
-        $query = $query->with([
-            'user',
-            'orders',
-            'subscriptions',
-            'hostingAccounts',
-            'domainRegistrations',
-            'invoices',
-            'payments',
-            'transactions',
-            'tickets'
-        ]);
+        // Only load essential relationships for index view
+        $query = $query->with(['user']);
 
         // If user is a customer, only show their own record
+        $user = $request->user();
+        if ($user && $user->isCustomer()) {
+            $query->where('id', $user->userable->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Build a "detail" query for the given resource.
+     */
+    public static function detailQuery(NovaRequest $request, $query)
+    {
+        // Load all relationships for detail view
+        $query = $query->with([
+            'user',
+            'orders' => function ($query) {
+                $query->latest()->limit(10); // Limit recent orders
+            },
+            'subscriptions' => function ($query) {
+                $query->where('status', 'active'); // Only active subscriptions
+            },
+            'hostingAccounts',
+            'domainRegistrations',
+            'invoices' => function ($query) {
+                $query->latest()->limit(10); // Limit recent invoices
+            },
+            'tickets' => function ($query) {
+                $query->latest()->limit(10); // Limit recent tickets
+            }
+        ]);
+
+        // Apply customer filter
         $user = $request->user();
         if ($user && $user->isCustomer()) {
             $query->where('id', $user->userable->id);

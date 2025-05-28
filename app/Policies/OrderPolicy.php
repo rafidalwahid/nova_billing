@@ -4,22 +4,15 @@ namespace App\Policies;
 
 use App\Models\Order;
 use App\Models\User;
-use App\Models\AdminUser;
 
-class OrderPolicy
+class OrderPolicy extends BasePolicy
 {
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Customers can view their own orders
-        if ($user->isCustomer()) {
-            return true;
-        }
-
-        // Staff users need proper permissions
-        return $this->hasPermission($user, 'order_management.view');
+        return $this->canViewAny($user, 'order_management.view');
     }
 
     /**
@@ -27,13 +20,7 @@ class OrderPolicy
      */
     public function view(User $user, Order $order): bool
     {
-        // Customers can only view their own orders
-        if ($user->isCustomer()) {
-            return $order->customer_id === $user->userable_id;
-        }
-
-        // Staff users need proper permissions
-        return $this->hasPermission($user, 'order_management.view');
+        return $this->canView($user, $order, 'order_management.view');
     }
 
     /**
@@ -41,7 +28,7 @@ class OrderPolicy
      */
     public function create(User $user): bool
     {
-        return $this->hasPermission($user, 'order_management.create');
+        return $this->canCreate($user, 'order_management.create');
     }
 
     /**
@@ -49,7 +36,7 @@ class OrderPolicy
      */
     public function update(User $user, Order $order): bool
     {
-        return $this->hasPermission($user, 'order_management.update');
+        return $this->canUpdate($user, $order, 'order_management.update');
     }
 
     /**
@@ -57,22 +44,6 @@ class OrderPolicy
      */
     public function delete(User $user, Order $order): bool
     {
-        return $this->hasPermission($user, 'order_management.delete');
-    }
-
-    /**
-     * Check if user has specific permission.
-     */
-    private function hasPermission(User $user, string $permission): bool
-    {
-        $adminUser = AdminUser::whereHas('user', function ($query) use ($user) {
-            $query->where('id', $user->id);
-        })->first();
-
-        if (!$adminUser || !$adminUser->role) {
-            return false;
-        }
-
-        return $adminUser->role->permissions()->where('slug', $permission)->exists();
+        return $this->canDelete($user, 'order_management.delete');
     }
 }

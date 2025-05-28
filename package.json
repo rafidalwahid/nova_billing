@@ -3,11 +3,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite",
-        "build-customer-portal": "cd nova-components/CustomerPortal && npm run dev",
-        "build-customer-portal-prod": "cd nova-components/CustomerPortal && npm run prod",
-        "build-customer-support": "cd nova-components/CustomerSupport && npm run dev",
-        "build-customer-support-prod": "cd nova-components/CustomerSupport && npm run prod"
+        "dev": "vite"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.1.7",

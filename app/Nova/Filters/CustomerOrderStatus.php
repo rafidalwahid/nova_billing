@@ -2,7 +2,6 @@
 
 namespace App\Nova\Filters;
 
-use Illuminate\Contracts\Database\Eloquent\Builder;
 use Laravel\Nova\Filters\Filter;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
@@ -25,7 +24,7 @@ class CustomerOrderStatus extends Filter
     /**
      * Apply the filter to the given query.
      */
-    public function apply(NovaRequest $request, Builder $query, mixed $value): Builder
+    public function apply(NovaRequest $request, $query, mixed $value)
     {
         return $query->where('status', $value);
     }

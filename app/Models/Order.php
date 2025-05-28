@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Traits\Auditable;
 
 class Order extends Model
 {
+    use Auditable;
     /**
      * The attributes that are mass assignable.
      *
