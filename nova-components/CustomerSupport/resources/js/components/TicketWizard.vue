@@ -213,81 +213,104 @@
 </template>
 
 <script>
+import { ref, computed, reactive, watch } from 'vue'
+
 export default {
   name: 'TicketWizard',
 
   props: {
     isOpen: {
       type: Boolean,
-      default: false
+      default: false,
+      required: true
     }
   },
 
-  emits: ['close', 'ticketCreated'],
+  emits: {
+    close: null,
+    ticketCreated: (ticket) => ticket && typeof ticket === 'object'
+  },
 
-  data() {
-    return {
-      currentStep: 0,
-      isSubmitting: false,
+  setup(props, { emit }) {
+    // Reactive state
+    const currentStep = ref(0)
+    const isSubmitting = ref(false)
 
-      steps: [
-        { title: 'Department' },
-        { title: 'Details' },
-        { title: 'Description' },
-        { title: 'Review' }
-      ],
+    // Static configuration
+    const steps = [
+      { title: 'Department' },
+      { title: 'Details' },
+      { title: 'Description' },
+      { title: 'Review' }
+    ]
 
-      departments: [
-        {
-          value: 'billing',
-          name: 'Billing Support',
-          description: 'Questions about invoices, payments, or billing issues',
-          icon: '💳'
-        },
-        {
-          value: 'technical',
-          name: 'Technical Support',
-          description: 'Website issues, hosting problems, or technical difficulties',
-          icon: '🔧'
-        },
-        {
-          value: 'general',
-          name: 'General Support',
-          description: 'Account questions, general inquiries, or other issues',
-          icon: '💬'
-        },
-        {
-          value: 'sales',
-          name: 'Sales Inquiry',
-          description: 'Questions about services, upgrades, or new purchases',
-          icon: '🛒'
-        }
-      ],
-
-      formData: {
-        department: '',
-        priority: 'medium',
-        subject: '',
-        description: '',
-        email: ''
+    const departments = [
+      {
+        value: 'billing',
+        name: 'Billing Support',
+        description: 'Questions about invoices, payments, or billing issues',
+        icon: '💳'
+      },
+      {
+        value: 'technical',
+        name: 'Technical Support',
+        description: 'Website issues, hosting problems, or technical difficulties',
+        icon: '🔧'
+      },
+      {
+        value: 'general',
+        name: 'General Support',
+        description: 'Account questions, general inquiries, or other issues',
+        icon: '💬'
+      },
+      {
+        value: 'sales',
+        name: 'Sales Inquiry',
+        description: 'Questions about services, upgrades, or new purchases',
+        icon: '🛒'
       }
-    }
-  },
+    ]
 
-  computed: {
-    canProceed() {
-      switch (this.currentStep) {
+    // Form data
+    const formData = reactive({
+      department: '',
+      priority: 'medium',
+      subject: '',
+      description: '',
+      email: ''
+    })
+
+    // Computed properties
+    const canProceed = computed(() => {
+      switch (currentStep.value) {
         case 0:
-          return this.formData.department !== ''
+          return formData.department !== ''
         case 1:
-          return this.formData.priority !== '' && this.formData.subject.trim() !== ''
+          return formData.priority !== '' && formData.subject.trim() !== ''
         case 2:
-          return this.formData.description.trim() !== '' && this.formData.email.trim() !== ''
+          return formData.description.trim() !== '' && formData.email.trim() !== ''
         case 3:
           return true
         default:
           return false
       }
+    })
+
+    // Watch for modal close to reset form
+    watch(() => props.isOpen, (newValue) => {
+      if (!newValue) {
+        resetForm()
+      }
+    })
+
+    return {
+      currentStep,
+      isSubmitting,
+      steps,
+      departments,
+      formData,
+      canProceed,
+      emit
     }
   },
 
@@ -306,43 +329,42 @@ export default {
 
     closeWizard() {
       this.resetForm()
-      this.$emit('close')
+      this.emit('close')
     },
 
     resetForm() {
       this.currentStep = 0
       this.isSubmitting = false
-      this.formData = {
+      Object.assign(this.formData, {
         department: '',
         priority: 'medium',
         subject: '',
         description: '',
         email: ''
-      }
+      })
     },
 
     async submitTicket() {
       this.isSubmitting = true
 
       try {
-        // Make actual API call to create ticket
-        const response = await Nova.request().post('/nova-vendor/customer-support/tickets', {
+        const payload = {
           department: this.formData.department,
           priority: this.formData.priority,
-          subject: this.formData.subject,
-          description: this.formData.description,
-          email: this.formData.email
-        })
+          subject: this.formData.subject.trim(),
+          description: this.formData.description.trim(),
+          email: this.formData.email.trim()
+        }
 
-        // Show success message
+        const response = await Nova.request().post('/nova-vendor/customer-support/tickets', payload)
+
         const ticketNumber = response.data.data?.ticket_number || 'Unknown'
         this.showSuccessMessage(`Ticket ${ticketNumber} created successfully! You will receive a confirmation email shortly.`)
 
-        this.$emit('ticketCreated', response.data.data)
+        this.emit('ticketCreated', response.data.data)
         this.closeWizard()
 
       } catch (error) {
-        // Show user-friendly error message
         const errorMessage = this.getErrorMessage(error)
         this.showErrorMessage(errorMessage)
       } finally {
@@ -356,64 +378,54 @@ export default {
     },
 
     getPriorityName(value) {
-      const priorities = {
+      const priorityMap = {
         'low': 'Low Priority',
         'medium': 'Medium Priority',
         'high': 'High Priority'
       }
-      return priorities[value] || value
+      return priorityMap[value] || value
     },
 
-    /**
-     * Get user-friendly error message from API response.
-     */
     getErrorMessage(error) {
-      if (error.response?.status === 401) {
-        return 'Authentication required. Please log in again.'
-      } else if (error.response?.status === 403) {
-        return 'Access denied. You do not have permission to create tickets.'
-      } else if (error.response?.status === 422) {
-        // Validation errors
-        const validationErrors = error.response?.data?.errors
-        if (validationErrors) {
-          const errorList = Object.values(validationErrors).flat().join('\n')
-          return `Validation errors:\n${errorList}`
-        } else {
+      const status = error.response?.status
+      const data = error.response?.data
+
+      switch (status) {
+        case 401:
+          return 'Authentication required. Please log in again.'
+        case 403:
+          return 'Access denied. You do not have permission to create tickets.'
+        case 422:
+          if (data?.errors) {
+            const errorList = Object.values(data.errors).flat().join('\n')
+            return `Validation errors:\n${errorList}`
+          }
           return 'Please check your input. Some fields may be invalid.'
-        }
-      } else if (error.response?.status === 429) {
-        return 'Too many requests. Please wait a moment before trying again.'
-      } else if (error.response?.status === 500) {
-        // Server error
-        const serverMessage = error.response?.data?.message
-        return serverMessage ? `Server error: ${serverMessage}` : 'Internal server error occurred.'
-      } else if (error.response?.data?.message) {
-        return error.response.data.message
+        case 429:
+          return 'Too many requests. Please wait a moment before trying again.'
+        case 500:
+          return data?.message ? `Server error: ${data.message}` : 'Internal server error occurred.'
+        default:
+          return data?.message || 'Failed to create ticket. Please try again.'
       }
-
-      return 'Failed to create ticket. Please try again.'
     },
 
-    /**
-     * Show success message to user.
-     * Uses Nova's built-in notification system.
-     */
     showSuccessMessage(message) {
-      this.$toasted.success(message, {
-        duration: 5000,
-        position: 'top-right'
-      })
+      if (this.$toasted) {
+        this.$toasted.success(message, {
+          duration: 5000,
+          position: 'top-right'
+        })
+      }
     },
 
-    /**
-     * Show error message to user.
-     * Uses Nova's built-in notification system.
-     */
     showErrorMessage(message) {
-      this.$toasted.error(message, {
-        duration: 8000,
-        position: 'top-right'
-      })
+      if (this.$toasted) {
+        this.$toasted.error(message, {
+          duration: 8000,
+          position: 'top-right'
+        })
+      }
     }
   }
 }

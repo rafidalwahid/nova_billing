@@ -1,6 +1,8 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-lg overflow-hidden" v-if="!loading || tickets.length > 0">
-
+  <div
+    v-if="!loading || tickets.length > 0"
+    class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-lg overflow-hidden"
+  >
     <!-- Desktop Table -->
     <div class="hidden lg:block overflow-x-auto">
       <table class="w-full">
@@ -9,41 +11,31 @@
           <tr>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 tracking-wide">
               <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
+                <TicketIcon />
                 Ticket
               </div>
             </th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 tracking-wide">
               <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+                <MessageIcon />
                 Subject
               </div>
             </th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 tracking-wide">
               <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <StatusIcon />
                 Status
               </div>
             </th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 tracking-wide">
               <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+                <DepartmentIcon />
                 Department
               </div>
             </th>
             <th class="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-200 tracking-wide">
               <div class="flex items-center justify-end gap-2">
-                <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <ClockIcon />
                 Last Updated
               </div>
             </th>
@@ -74,7 +66,7 @@
                 {{ ticket.subject }}
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                {{ ticket.description ? ticket.description.substring(0, 80) + '...' : '' }}
+                {{ truncateText(ticket.description, 80) }}
               </div>
             </td>
 
@@ -153,7 +145,7 @@
             {{ ticket.subject }}
           </div>
           <div v-if="ticket.description" class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-            {{ ticket.description.substring(0, 120) }}{{ ticket.description.length > 120 ? '...' : '' }}
+            {{ truncateText(ticket.description, 120) }}
           </div>
         </div>
 
@@ -202,13 +194,64 @@
 </template>
 
 <script>
+
+// Icon Components
+const TicketIcon = {
+  template: `
+    <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  `
+}
+
+const MessageIcon = {
+  template: `
+    <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  `
+}
+
+const StatusIcon = {
+  template: `
+    <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  `
+}
+
+const DepartmentIcon = {
+  template: `
+    <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  `
+}
+
+const ClockIcon = {
+  template: `
+    <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  `
+}
+
 export default {
   name: 'TicketList',
+
+  components: {
+    TicketIcon,
+    MessageIcon,
+    StatusIcon,
+    DepartmentIcon,
+    ClockIcon
+  },
 
   props: {
     tickets: {
       type: Array,
-      default: () => []
+      default: () => [],
+      validator: (tickets) => Array.isArray(tickets)
     },
     loading: {
       type: Boolean,
@@ -221,60 +264,95 @@ export default {
         last_page: 1,
         per_page: 10,
         total: 0
-      })
+      }),
+      validator: (pagination) => {
+        return pagination &&
+               typeof pagination.current_page === 'number' &&
+               typeof pagination.last_page === 'number' &&
+               typeof pagination.per_page === 'number' &&
+               typeof pagination.total === 'number'
+      }
     },
     totalTickets: {
       type: Number,
-      default: 0
+      default: 0,
+      validator: (value) => value >= 0
     }
   },
 
-  emits: ['viewTicket', 'changePage', 'createTicket'],
+  emits: {
+    viewTicket: (ticket) => ticket && typeof ticket === 'object',
+    changePage: (page) => typeof page === 'number' && page > 0,
+    createTicket: null
+  },
+
+  setup() {
+    // Status badge classes mapping
+    const statusClasses = {
+      'open': 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/30',
+      'in_progress': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/30',
+      'resolved': 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/30',
+      'closed': 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700',
+      'waiting_customer': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/30'
+    }
+
+    // Status display names mapping
+    const statusNames = {
+      'open': 'Open',
+      'in_progress': 'In Progress',
+      'resolved': 'Resolved',
+      'closed': 'Closed',
+      'waiting_customer': 'Waiting for Your Response'
+    }
+
+    // Department names mapping
+    const departmentNames = {
+      'billing': 'Billing Support',
+      'technical': 'Technical Support',
+      'sales': 'Sales Inquiry',
+      'general': 'General Support'
+    }
+
+    return {
+      statusClasses,
+      statusNames,
+      departmentNames
+    }
+  },
 
   methods: {
     getStatusBadgeClass(status) {
-      const classes = {
-        'open': 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/30',
-        'in_progress': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/30',
-        'resolved': 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/30',
-        'closed': 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700',
-        // Legacy support for old mock data
-        'waiting_customer': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/30',
-      }
-      return classes[status] || 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+      return this.statusClasses[status] || this.statusClasses.closed
     },
 
     formatStatus(status) {
-      const statusMap = {
-        'open': 'Open',
-        'in_progress': 'In Progress',
-        'resolved': 'Resolved',
-        'closed': 'Closed',
-        // Legacy support for old mock data
-        'waiting_customer': 'Waiting for Your Response'
-      }
-      return statusMap[status] || 'Unknown'
+      return this.statusNames[status] || 'Unknown'
     },
 
     formatDate(date) {
       if (!date) return ''
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+
+      try {
+        return new Date(date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      } catch (error) {
+        console.warn('Invalid date format:', date)
+        return 'Invalid Date'
+      }
     },
 
     getDepartmentName(category) {
-      const departmentNames = {
-        'billing': 'Billing Support',
-        'technical': 'Technical Support',
-        'sales': 'Sales Inquiry',
-        'general': 'General Support'
-      }
-      return departmentNames[category] || 'General Support'
+      return this.departmentNames[category] || 'General Support'
+    },
+
+    truncateText(text, maxLength = 80) {
+      if (!text || text.length <= maxLength) return text
+      return text.substring(0, maxLength) + '...'
     }
   }
 }

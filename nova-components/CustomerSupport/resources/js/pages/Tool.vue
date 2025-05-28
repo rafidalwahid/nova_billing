@@ -4,6 +4,18 @@
 
     <!-- Main Content Area -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Filters -->
+      <TicketFilters
+        v-model:searchQuery="searchQuery"
+        v-model:statusFilter="statusFilter"
+        v-model:departmentFilter="departmentFilter"
+        :totalTickets="totalTickets"
+        @createTicket="openWizard"
+        @update:searchQuery="handleSearch"
+        @update:statusFilter="handleFilterChange"
+        @update:departmentFilter="handleFilterChange"
+      />
+
       <!-- Ticket List -->
       <TicketList
         :tickets="tickets"
@@ -28,45 +40,67 @@
       @close="closeWizard"
       @ticketCreated="onTicketCreated"
     />
+
+    <!-- Ticket Details Modal -->
+    <TicketDetailsModal
+      :isOpen="showTicketDetails"
+      :ticket="selectedTicket"
+      @close="closeTicketDetails"
+      @addResponse="onResponseAdded"
+    />
   </div>
 </template>
 
 <script>
+import { ref, reactive } from 'vue'
+import TicketFilters from '../components/TicketFilters.vue'
 import TicketList from '../components/TicketList.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import TicketWizard from '../components/TicketWizard.vue'
+import TicketDetailsModal from '../components/TicketDetailsModal.vue'
 
 export default {
   name: 'CustomerSupportTool',
 
   components: {
+    TicketFilters,
     TicketList,
     LoadingSpinner,
-    TicketWizard
+    TicketWizard,
+    TicketDetailsModal
   },
 
-  data() {
+  setup() {
+    // Reactive state
+    const loading = ref(false)
+    const tickets = ref([])
+    const pagination = reactive({
+      current_page: 1,
+      last_page: 1,
+      per_page: 10,
+      total: 0
+    })
+    const totalTickets = ref(0)
+    const showWizard = ref(false)
+    const showTicketDetails = ref(false)
+    const selectedTicket = ref(null)
+    const searchQuery = ref('')
+    const statusFilter = ref('')
+    const departmentFilter = ref('')
+    const searchTimeout = ref(null)
+
     return {
-      loading: false,
-      tickets: [],
-      pagination: {
-        current_page: 1,
-        last_page: 1,
-        per_page: 10,
-        total: 0
-      },
-      totalTickets: 0,
-      showWizard: false,
-      searchQuery: '',
-      statusFilter: '',
-      departmentFilter: '',
-      searchTimeout: null,
-    }
-  },
-
-  computed: {
-    openTicketsCount() {
-      return this.tickets.filter(ticket => ticket.status === 'open' || ticket.status === 'in_progress').length
+      loading,
+      tickets,
+      pagination,
+      totalTickets,
+      showWizard,
+      showTicketDetails,
+      selectedTicket,
+      searchQuery,
+      statusFilter,
+      departmentFilter,
+      searchTimeout
     }
   },
 
@@ -125,8 +159,25 @@ export default {
     },
 
     async viewTicketDetails(ticket) {
-      // TODO: Implement ticket details modal or navigation
-      console.log('View ticket details:', ticket)
+      this.selectedTicket = ticket
+      this.showTicketDetails = true
+    },
+
+    closeTicketDetails() {
+      this.showTicketDetails = false
+      this.selectedTicket = null
+    },
+
+    onResponseAdded() {
+      // Refresh the ticket list to show updated status
+      this.loadTickets(this.pagination.current_page)
+
+      if (this.$toasted) {
+        this.$toasted.success('Response added successfully!', {
+          duration: 3000,
+          position: 'top-right'
+        })
+      }
     },
 
     openWizard() {
@@ -137,30 +188,37 @@ export default {
       this.showWizard = false
     },
 
-    onTicketCreated(ticketData) {
-      console.log('Ticket created:', ticketData)
-      // Refresh the ticket list to show the new ticket
+    onTicketCreated() {
       this.loadTickets(1)
-      // Show success message
-      this.$toasted?.success('Support ticket created successfully!')
+
+      if (this.$toasted) {
+        this.$toasted.success('Support ticket created successfully!', {
+          duration: 5000,
+          position: 'top-right'
+        })
+      }
     },
 
     handleSearch() {
-      // Clear existing timeout
       if (this.searchTimeout) {
         clearTimeout(this.searchTimeout)
       }
 
-      // Debounce search to avoid too many API calls
       this.searchTimeout = setTimeout(() => {
-        this.loadTickets(1) // Reset to first page when searching
+        this.loadTickets(1)
       }, 500)
     },
 
     handleFilterChange() {
-      // Immediately apply filter changes
-      this.loadTickets(1) // Reset to first page when filtering
+      this.loadTickets(1)
     },
+
+    clearSearchTimeout() {
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout)
+        this.searchTimeout = null
+      }
+    }
   }
 }
 </script>

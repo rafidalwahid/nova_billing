@@ -19,11 +19,13 @@
           @change="$emit('update:statusFilter', $event.target.value)"
           class="w-full sm:w-48 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 transition-all duration-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 focus:outline-none cursor-pointer"
         >
-          <option value="">All Statuses</option>
-          <option value="open">Open</option>
-          <option value="waiting_customer">Waiting for Your Response</option>
-          <option value="resolved">Resolved</option>
-          <option value="closed">Closed</option>
+          <option
+            v-for="option in statusOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
         </select>
 
         <!-- Department Filter -->
@@ -32,11 +34,13 @@
           @change="$emit('update:departmentFilter', $event.target.value)"
           class="w-full sm:w-48 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 transition-all duration-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 focus:outline-none cursor-pointer"
         >
-          <option value="">All Departments</option>
-          <option value="billing">Billing Support</option>
-          <option value="technical">Technical Support</option>
-          <option value="general">General Support</option>
-          <option value="sales">Sales Inquiry</option>
+          <option
+            v-for="option in departmentOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
         </select>
       </div>
 
@@ -62,27 +66,55 @@ export default {
   props: {
     searchQuery: {
       type: String,
-      default: ''
+      default: '',
+      validator: (value) => typeof value === 'string'
     },
     statusFilter: {
       type: String,
-      default: ''
+      default: '',
+      validator: (value) => typeof value === 'string'
     },
     departmentFilter: {
       type: String,
-      default: ''
+      default: '',
+      validator: (value) => typeof value === 'string'
     },
     totalTickets: {
       type: Number,
-      default: 0
+      default: 0,
+      validator: (value) => typeof value === 'number' && value >= 0
     }
   },
 
-  emits: [
-    'update:searchQuery',
-    'update:statusFilter',
-    'update:departmentFilter',
-    'createTicket'
-  ]
+  emits: {
+    'update:searchQuery': (value) => typeof value === 'string',
+    'update:statusFilter': (value) => typeof value === 'string',
+    'update:departmentFilter': (value) => typeof value === 'string',
+    'createTicket': null
+  },
+
+  setup() {
+    // Filter options
+    const statusOptions = [
+      { value: '', label: 'All Statuses' },
+      { value: 'open', label: 'Open' },
+      { value: 'waiting_customer', label: 'Waiting for Your Response' },
+      { value: 'resolved', label: 'Resolved' },
+      { value: 'closed', label: 'Closed' }
+    ]
+
+    const departmentOptions = [
+      { value: '', label: 'All Departments' },
+      { value: 'billing', label: 'Billing Support' },
+      { value: 'technical', label: 'Technical Support' },
+      { value: 'sales', label: 'Sales Inquiry' },
+      { value: 'general', label: 'General Support' }
+    ]
+
+    return {
+      statusOptions,
+      departmentOptions
+    }
+  }
 }
 </script>
