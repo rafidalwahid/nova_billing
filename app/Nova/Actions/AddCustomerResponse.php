@@ -5,18 +5,13 @@ namespace App\Nova\Actions;
 use App\Models\Ticket;
 use App\Services\TicketService;
 use App\Services\FileUploadService;
-use App\Services\AttachmentService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
-use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Fields\File;
-use Laravel\Nova\Fields\Select;
-use Laravel\Nova\Fields\Boolean;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 class AddCustomerResponse extends Action
@@ -27,7 +22,7 @@ class AddCustomerResponse extends Action
     /**
      * The displayable name of the action.
      */
-    public $name = 'Add Response & Manage Attachments';
+    public $name = 'Reply to Ticket';
 
     /**
      * Perform the action on the given models.
@@ -50,13 +45,6 @@ class AddCustomerResponse extends Action
                         continue;
                     }
 
-                    // Handle file attachments if provided
-                    $attachments = [];
-                    if ($fields->add_attachment && $fields->attachment) {
-                        $fileUploadService = app(FileUploadService::class);
-                        $attachments[] = $fileUploadService->uploadTicketAttachment($fields->attachment, $ticket->id);
-                    }
-
                     // Add customer response using service
                     $response = $ticketService->addCustomerResponse(
                         $ticket,
@@ -64,9 +52,13 @@ class AddCustomerResponse extends Action
                         $fields->message
                     );
 
-                    // Update response with attachments if any
-                    if (!empty($attachments)) {
-                        $response->update(['attachments' => $attachments]);
+                    // Handle file attachment if provided
+                    if ($fields->attachment) {
+                        $fileUploadService = app(FileUploadService::class);
+                        $attachment = $fileUploadService->uploadTicketAttachment($fields->attachment, $ticket->id);
+
+                        // Add attachment to response
+                        $response->update(['attachments' => [$attachment]]);
                     }
 
                     $responsesAdded++;
@@ -93,27 +85,18 @@ class AddCustomerResponse extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Textarea::make('Message')
-                ->rules('required', 'min:10', 'max:1000')
-                ->rows(5)
-                ->help('Enter your response message (10-1000 characters)'),
+            Textarea::make('Your Reply', 'message')
+                ->rules('required', 'min:5', 'max:1000')
+                ->rows(4)
+                ->placeholder('Type your reply here...')
+                ->help('Enter your response (5-1000 characters)'),
 
-            Boolean::make('Add Attachment', 'add_attachment')
-                ->default(false)
-                ->help('Check this box if you want to add a file attachment'),
-
-            File::make('Attachment')
+            File::make('Attach File', 'attachment')
                 ->disk('public')
                 ->path('ticket-attachments')
                 ->acceptedTypes('.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip')
-                ->help('Upload a file (Images, Documents, Archives - Max 10MB)')
-                ->dependsOn(['add_attachment'], function (File $field, NovaRequest $request, $formData) {
-                    if ($formData['add_attachment']) {
-                        $field->show()->rules('required');
-                    } else {
-                        $field->hide();
-                    }
-                }),
+                ->help('Optional: Attach a file (Max 10MB)')
+                ->nullable(),
         ];
     }
 
@@ -147,4 +130,6 @@ class AddCustomerResponse extends Action
         // Customer must own the ticket
         return $model->customer_id === $user->userable_id;
     }
+
+
 }

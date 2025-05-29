@@ -54,9 +54,9 @@ class TicketPolicy extends BasePolicy
      */
     public function update(User $user, Ticket $ticket): bool
     {
-        // Customers cannot update tickets (only add responses)
+        // Customers can "update" tickets only for adding responses (Nova actions require this)
         if ($user->isCustomer()) {
-            return false;
+            return $this->isCustomerOwner($user, $ticket);
         }
 
         // Staff users need proper permissions

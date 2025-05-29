@@ -135,7 +135,6 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
 
                 \Laravel\Nova\Menu\MenuSection::make('Support Management', [
                     \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\Ticket::class),
-                    \Laravel\Nova\Menu\MenuItem::resource(\App\Nova\TicketResponse::class),
                 ])->icon('support')->collapsible(),
             ];
         });

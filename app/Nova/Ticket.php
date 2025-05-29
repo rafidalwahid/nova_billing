@@ -131,7 +131,12 @@ class Ticket extends Resource
             return false;
         }
 
-        // Use policy for authorization
+        // Customers cannot access the edit form (but can run actions via policy)
+        if ($user->isCustomer()) {
+            return false;
+        }
+
+        // Use policy for authorization for staff
         return $user->can('update', $this->resource);
     }
 
@@ -199,16 +204,25 @@ class Ticket extends Resource
                 ->showCreateRelationButton()
                 ->display(function ($customer) {
                     return $customer->first_name . ' ' . $customer->last_name;
+                })
+                ->readonly(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
                 }),
 
             Text::make('Subject')
                 ->sortable()
-                ->rules('required', 'max:255'),
+                ->rules('required', 'max:255')
+                ->readonly(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             Textarea::make('Description')
                 ->hideFromIndex()
                 ->rules('required')
-                ->rows(4),
+                ->rows(4)
+                ->readonly(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             Badge::make('Status')
                 ->map([
@@ -229,7 +243,11 @@ class Ticket extends Resource
                 ->options(TicketModel::getStatuses())
                 ->default(TicketModel::STATUS_OPEN)
                 ->rules('required')
-                ->hideFromIndex(),
+                ->hideFromIndex()
+                ->hideFromDetail()
+                ->readonly(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             Badge::make('Priority')
                 ->map([
@@ -250,7 +268,11 @@ class Ticket extends Resource
                 ->options(TicketModel::getPriorities())
                 ->default(TicketModel::PRIORITY_NORMAL)
                 ->rules('required')
-                ->hideFromIndex(),
+                ->hideFromIndex()
+                ->hideFromDetail()
+                ->readonly(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             Badge::make('Category')
                 ->map([
@@ -271,22 +293,35 @@ class Ticket extends Resource
                 ->options(TicketModel::getCategories())
                 ->default(TicketModel::CATEGORY_GENERAL)
                 ->rules('required')
-                ->hideFromIndex(),
+                ->hideFromIndex()
+                ->hideFromDetail()
+                ->readonly(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             BelongsTo::make('Assigned To', 'assignedTo', AdminUser::class)
                 ->nullable()
                 ->searchable()
-                ->showCreateRelationButton(),
+                ->showCreateRelationButton()
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             BelongsTo::make('Department')
                 ->nullable()
                 ->searchable()
-                ->showCreateRelationButton(),
+                ->showCreateRelationButton()
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             Text::make('Source')
                 ->default('web')
                 ->hideFromIndex()
-                ->rules('required'),
+                ->rules('required')
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             DateTime::make('Created At')
                 ->onlyOnDetail()
@@ -298,11 +333,17 @@ class Ticket extends Resource
 
             DateTime::make('Resolved At')
                 ->hideFromIndex()
-                ->nullable(),
+                ->nullable()
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             DateTime::make('Closed At')
                 ->hideFromIndex()
-                ->nullable(),
+                ->nullable()
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             Text::make('SLA Due At', function () {
                 if (!$this->sla_due_at) return null;
@@ -326,10 +367,14 @@ class Ticket extends Resource
 
                     return $value;
                 })
-                ->asHtml(),
+                ->asHtml()
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
             DateTime::make('SLA Due At', 'sla_due_at')
                 ->hideFromIndex()
+                ->hideFromDetail()
                 ->nullable(),
 
             Text::make('Response Time', function () {
@@ -354,66 +399,109 @@ class Ticket extends Resource
                     }
                     return '<span class="text-green-600">' . $value . '</span>';
                 })
-                ->asHtml(),
+                ->asHtml()
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
 
-            Text::make('Customer Attachments', function () {
+            Text::make('Conversation', function () {
                 // Only load this on detail view and cache the result
-                static $attachmentCache = [];
-                $cacheKey = "ticket_{$this->id}_attachments";
+                static $conversationCache = [];
+                $cacheKey = "ticket_{$this->id}_conversation";
 
-                if (isset($attachmentCache[$cacheKey])) {
-                    return $attachmentCache[$cacheKey];
+                if (isset($conversationCache[$cacheKey])) {
+                    return $conversationCache[$cacheKey];
                 }
 
-                // Use a more efficient query to get customer responses with attachments
-                $customerResponses = $this->responses()
-                    ->where('type', \App\Models\TicketResponse::TYPE_CUSTOMER)
-                    ->whereNotNull('attachments')
-                    ->where('attachments', '!=', '[]')
+                // Get all responses ordered by creation date
+                $responses = $this->responses()
+                    ->with(['user', 'adminUser'])
+                    ->orderBy('created_at', 'asc')
                     ->get();
 
-                $totalAttachments = 0;
-                $attachmentFiles = [];
+                if ($responses->isEmpty()) {
+                    $result = '<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">No responses yet. Use the "Reply" action above to start the conversation.</div>';
+                    $conversationCache[$cacheKey] = $result;
+                    return $result;
+                }
 
-                foreach ($customerResponses as $response) {
-                    if ($response->attachments && is_array($response->attachments)) {
-                        $totalAttachments += count($response->attachments);
+                $conversationHtml = '<div class="space-y-4">';
+
+                foreach ($responses as $response) {
+                    $isCustomer = $response->type === \App\Models\TicketResponse::TYPE_CUSTOMER;
+                    $isInternal = $response->is_internal;
+
+                    // Determine author and styling
+                    if ($isCustomer) {
+                        $author = $response->user ? $response->user->name : 'Customer';
+                        $bgColor = 'bg-blue-50 border-blue-200';
+                        $authorColor = 'text-blue-700';
+                        $icon = '👤';
+                    } else {
+                        $author = $response->adminUser ? $response->adminUser->name : 'Staff';
+                        $bgColor = $isInternal ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200';
+                        $authorColor = $isInternal ? 'text-yellow-700' : 'text-green-700';
+                        $icon = $isInternal ? '🔒' : '👨‍💼';
+                    }
+
+                    $conversationHtml .= "<div class='border rounded-lg p-4 {$bgColor}'>";
+
+                    // Header with author and timestamp
+                    $conversationHtml .= "<div class='flex items-center justify-between mb-2'>";
+                    $conversationHtml .= "<div class='flex items-center'>";
+                    $conversationHtml .= "<span class='mr-2'>{$icon}</span>";
+                    $conversationHtml .= "<span class='font-medium {$authorColor}'>{$author}</span>";
+                    if ($isInternal) {
+                        $conversationHtml .= "<span class='ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded'>Internal Note</span>";
+                    }
+                    $conversationHtml .= "</div>";
+                    $conversationHtml .= "<span class='text-sm text-gray-500'>{$response->created_at->format('M j, Y g:i A')}</span>";
+                    $conversationHtml .= "</div>";
+
+                    // Message content
+                    $conversationHtml .= "<div class='text-gray-800 mb-3'>" . nl2br(e($response->message)) . "</div>";
+
+                    // Attachments if any
+                    if ($response->attachments && is_array($response->attachments) && !empty($response->attachments)) {
+                        $conversationHtml .= "<div class='border-t pt-2 mt-2'>";
+                        $conversationHtml .= "<div class='text-sm font-medium text-gray-600 mb-2'>📎 Attachments:</div>";
                         foreach ($response->attachments as $index => $attachment) {
                             $name = $attachment['original_name'] ?? 'Unknown';
                             $size = isset($attachment['file_size']) ?
                                 \App\Services\FileUploadService::formatFileSize($attachment['file_size']) : '';
+                            $downloadUrl = "/admin/download-attachment/{$response->id}/{$index}";
 
-                            // Use admin download route for better control
-                            $adminDownloadUrl = "/admin/download-attachment/{$response->id}/{$index}";
-
-                            $attachmentFiles[] = "<div class='flex items-center justify-between py-1 border-b border-gray-100'>" .
-                                               "<div class='flex items-center'>" .
-                                               "<span class='text-blue-500 mr-2'>📎</span>" .
-                                               "<a href='{$adminDownloadUrl}' target='_blank' class='text-blue-600 hover:text-blue-800 font-medium'>{$name}</a>" .
-                                               ($size ? " <span class='text-gray-500 ml-2'>({$size})</span>" : '') .
-                                               "</div>" .
-                                               "<a href='{$adminDownloadUrl}' target='_blank' class='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'>Download</a>" .
-                                               "</div>";
+                            $conversationHtml .= "<div class='flex items-center justify-between bg-white rounded p-2 mb-1'>";
+                            $conversationHtml .= "<div class='flex items-center'>";
+                            $conversationHtml .= "<span class='text-blue-500 mr-2'>📄</span>";
+                            $conversationHtml .= "<span class='text-sm'>{$name}</span>";
+                            if ($size) {
+                                $conversationHtml .= "<span class='text-xs text-gray-500 ml-2'>({$size})</span>";
+                            }
+                            $conversationHtml .= "</div>";
+                            $conversationHtml .= "<a href='{$downloadUrl}' target='_blank' class='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'>Download</a>";
+                            $conversationHtml .= "</div>";
                         }
+                        $conversationHtml .= "</div>";
                     }
+
+                    $conversationHtml .= "</div>";
                 }
 
-                $result = $totalAttachments === 0
-                    ? '<span class="text-gray-500">No customer attachments</span>'
-                    : "<div class='mb-3'><strong class='text-gray-700'>📎 {$totalAttachments} file(s) from customer:</strong></div>" .
-                      "<div class='bg-gray-50 border border-gray-200 rounded-lg p-3'>" . implode('', $attachmentFiles) . "</div>";
+                $conversationHtml .= '</div>';
 
-                $attachmentCache[$cacheKey] = $result;
-                return $result;
+                $conversationCache[$cacheKey] = $conversationHtml;
+                return $conversationHtml;
             })
                 ->onlyOnDetail()
                 ->asHtml(),
 
             Textarea::make('Internal Notes')
                 ->hideFromIndex()
-                ->rows(3),
-
-            HasMany::make('Responses', 'responses', TicketResponse::class),
+                ->rows(3)
+                ->hide(function ($request) {
+                    return $request->user() && $request->user()->isCustomer();
+                }),
         ];
     }
 
@@ -470,20 +558,24 @@ class Ticket extends Resource
     {
         $user = $request->user();
 
-        // Customer actions
+        // Customer actions - simple and focused
         if ($user && $user->isCustomer()) {
             return [
                 \App\Nova\Actions\AddCustomerResponse::make(),
             ];
         }
 
-        // Staff actions
+        // Staff actions - organized by frequency of use
         return [
-            \App\Nova\Actions\AssignToSelf::make(),
-            \App\Nova\Actions\ReassignTicket::make(),
-            \App\Nova\Actions\ChangeTicketStatus::make(),
-            \App\Nova\Actions\EscalateTicket::make(),
+            // Most common actions first
             \App\Nova\Actions\AddTicketResponse::make(),
+            \App\Nova\Actions\MarkAsResolved::make(),
+            \App\Nova\Actions\AssignToSelf::make(),
+
+            // Less common actions
+            \App\Nova\Actions\ChangeTicketStatus::make(),
+            \App\Nova\Actions\ReassignTicket::make(),
+            \App\Nova\Actions\EscalateTicket::make(),
         ];
     }
 }

@@ -26,7 +26,7 @@ class AddTicketResponse extends Action
      *
      * @var string
      */
-    public $name = 'Add Response';
+    public $name = 'Reply to Customer';
 
     /**
      * Perform the action on the given models.
@@ -97,20 +97,21 @@ class AddTicketResponse extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Textarea::make('Message')
-                ->rules('required')
-                ->rows(5)
-                ->help('Enter your response or internal note'),
+            Textarea::make('Your Reply', 'message')
+                ->rules('required', 'min:5')
+                ->rows(4)
+                ->placeholder('Type your reply to the customer...')
+                ->help('Enter your response to the customer'),
 
-            Boolean::make('Internal Note', 'is_internal')
+            Boolean::make('Internal Note Only', 'is_internal')
                 ->default(false)
-                ->help('Check if this is an internal note (not visible to customers)'),
+                ->help('Check this if the note should only be visible to staff (not the customer)'),
 
-            File::make('Attachment')
+            File::make('Attach File', 'attachment')
                 ->disk('public')
                 ->path('ticket-attachments')
                 ->acceptedTypes('.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip')
-                ->help('Optional: Upload a file (Images, Documents, Archives - Max 10MB)')
+                ->help('Optional: Attach a file (Max 10MB)')
                 ->nullable(),
         ];
     }

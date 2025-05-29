@@ -211,17 +211,23 @@ class CustomerTicketController extends Controller
     }
 
     /**
-     * Add a response to an existing ticket.
+     * Add a response to an existing ticket (with optional attachment).
      *
-     * @param AddTicketResponseRequest $request
+     * @param Request $request
      * @param int $ticketId
      * @return JsonResponse
      */
-    public function addResponse(AddTicketResponseRequest $request, int $ticketId): JsonResponse
+    public function addResponse(Request $request, int $ticketId): JsonResponse
     {
         try {
             $customer = $request->user()->userable;
             $user = $request->user();
+
+            // Validate request
+            $request->validate([
+                'message' => 'required|string|min:5|max:1000',
+                'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip'
+            ]);
 
             // Get ticket with authorization check
             $ticket = $this->ticketService->getCustomerTicket($customer, $ticketId);
@@ -230,11 +236,23 @@ class CustomerTicketController extends Controller
             $response = $this->ticketService->addCustomerResponse(
                 $ticket,
                 $user,
-                $request->validated()['message']
+                $request->input('message')
             );
 
+            // Handle file attachment if provided
+            if ($request->hasFile('attachment')) {
+                $fileUploadService = app(\App\Services\FileUploadService::class);
+                $attachment = $fileUploadService->uploadTicketAttachment(
+                    $request->file('attachment'),
+                    $ticket->id
+                );
+
+                // Add attachment to response
+                $response->update(['attachments' => [$attachment]]);
+            }
+
             return response()->json([
-                'data' => $response,
+                'data' => $response->load(['user', 'ticket']),
                 'message' => 'Response added successfully.'
             ], 201);
 
@@ -243,6 +261,12 @@ class CustomerTicketController extends Controller
                 'error' => 'Ticket not found.',
                 'message' => 'The requested ticket does not exist or you do not have permission to access it.'
             ], 404);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'Validation failed.',
+                'errors' => $e->errors()
+            ], 422);
 
         } catch (\InvalidArgumentException $e) {
             return response()->json([

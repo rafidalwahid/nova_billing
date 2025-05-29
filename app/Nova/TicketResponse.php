@@ -305,19 +305,7 @@ class TicketResponse extends Resource
      */
     public function actions(NovaRequest $request)
     {
-        $user = $request->user();
-
-        // Customers can manage attachments on their own responses
-        if ($user && $user->isCustomer()) {
-            return [
-                \App\Nova\Actions\ManageMyAttachments::make(),
-            ];
-        }
-
-        // Admin/Staff actions - unified attachment management
-        return [
-            \App\Nova\Actions\AdminAddAttachment::make(),
-            \App\Nova\Actions\AdminRemoveAttachment::make(),
-        ];
+        // No actions needed - responses are managed through the ticket
+        return [];
     }
 }
