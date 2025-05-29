@@ -33,32 +33,28 @@ class ReassignTicket extends Action
      */
     public function handle(ActionFields $fields, Collection $models)
     {
+        $ticketService = app(\App\Services\TicketService::class);
         $assignedToId = $fields->assigned_to;
         $departmentId = $fields->department_id;
         $reassignedCount = 0;
+        $errors = [];
 
         foreach ($models as $ticket) {
             if ($ticket instanceof Ticket) {
-                $updateData = [];
-                
-                if ($assignedToId) {
-                    $updateData['assigned_to'] = $assignedToId;
-                    
-                    // If assigning to someone, set status to in progress if it's open
-                    if ($ticket->status === Ticket::STATUS_OPEN) {
-                        $updateData['status'] = Ticket::STATUS_IN_PROGRESS;
+                try {
+                    // Use service for consistent business logic
+                    $success = $ticketService->reassignTicket($ticket, $assignedToId, $departmentId);
+                    if ($success) {
+                        $reassignedCount++;
                     }
-                }
-                
-                if ($departmentId) {
-                    $updateData['department_id'] = $departmentId;
-                }
-
-                if (!empty($updateData)) {
-                    $ticket->update($updateData);
-                    $reassignedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Ticket #{$ticket->ticket_number}: " . $e->getMessage();
                 }
             }
+        }
+
+        if (!empty($errors)) {
+            return Action::danger('Some reassignments failed: ' . implode('; ', $errors));
         }
 
         return Action::message("Successfully reassigned {$reassignedCount} ticket(s).");

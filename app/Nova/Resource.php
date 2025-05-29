@@ -70,10 +70,10 @@ abstract class Resource extends NovaResource
                 \App\Nova\CustomerOrderItem::class,
                 \App\Nova\CustomerInvoice::class,
                 \App\Nova\CustomerInvoiceLine::class,
-                \App\Nova\CustomerTicket::class,
                 \App\Nova\CustomerPayment::class,
                 \App\Nova\CustomerSubscriptionItem::class,
-                \App\Nova\Ticket::class, // For backward compatibility
+                \App\Nova\Ticket::class,
+                \App\Nova\TicketResponse::class,
             ];
 
             if (!in_array(static::class, $allowedCustomerResources)) {

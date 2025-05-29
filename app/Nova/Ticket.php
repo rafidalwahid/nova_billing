@@ -91,13 +91,8 @@ class Ticket extends Resource
             return false;
         }
 
-        // Customers can view tickets (filtered to their own)
-        if ($user->isCustomer()) {
-            return true;
-        }
-
-        // Staff users can view all tickets
-        return true;
+        // Use policy for authorization
+        return $user->can('viewAny', \App\Models\Ticket::class);
     }
 
     /**
@@ -111,13 +106,8 @@ class Ticket extends Resource
             return false;
         }
 
-        // Customers can only view their own tickets
-        if ($user->isCustomer()) {
-            return $this->resource->customer_id === $user->userable->id;
-        }
-
-        // Staff users can view all tickets
-        return true;
+        // Use policy for authorization
+        return $user->can('view', $this->resource);
     }
 
     /**
@@ -131,13 +121,8 @@ class Ticket extends Resource
             return false;
         }
 
-        // Customers can create tickets
-        if ($user->isCustomer()) {
-            return true;
-        }
-
-        // Staff users can create tickets
-        return true;
+        // Use policy for authorization
+        return $user->can('create', \App\Models\Ticket::class);
     }
 
     /**
@@ -151,13 +136,8 @@ class Ticket extends Resource
             return false;
         }
 
-        // Customers cannot update tickets (only staff can)
-        if ($user->isCustomer()) {
-            return false;
-        }
-
-        // Staff users can update tickets
-        return true;
+        // Use policy for authorization
+        return $user->can('update', $this->resource);
     }
 
     /**
@@ -171,13 +151,8 @@ class Ticket extends Resource
             return false;
         }
 
-        // Customers cannot delete tickets
-        if ($user->isCustomer()) {
-            return false;
-        }
-
-        // Staff users can delete tickets
-        return true;
+        // Use policy for authorization
+        return $user->can('delete', $this->resource);
     }
 
     /**
@@ -498,6 +473,16 @@ class Ticket extends Resource
      */
     public function actions(NovaRequest $request)
     {
+        $user = $request->user();
+
+        // Customer actions
+        if ($user && $user->isCustomer()) {
+            return [
+                \App\Nova\Actions\AddCustomerResponse::make(),
+            ];
+        }
+
+        // Staff actions
         return [
             \App\Nova\Actions\AssignToSelf::make(),
             \App\Nova\Actions\ReassignTicket::make(),

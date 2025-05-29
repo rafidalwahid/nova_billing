@@ -18,7 +18,7 @@ class TicketPolicy extends BasePolicy
         }
 
         // Staff users need proper permissions
-        return $this->hasPermission($user, 'support_management.view');
+        return $this->hasPermission($user, 'view-support-tickets');
     }
 
     /**
@@ -32,7 +32,7 @@ class TicketPolicy extends BasePolicy
         }
 
         // Staff users need proper permissions
-        return $this->hasPermission($user, 'support_management.view');
+        return $this->hasPermission($user, 'view-support-tickets');
     }
 
     /**
@@ -46,7 +46,7 @@ class TicketPolicy extends BasePolicy
         }
 
         // Staff users need proper permissions
-        return $this->hasPermission($user, 'support_management.create');
+        return $this->hasPermission($user, 'create-support-tickets');
     }
 
     /**
@@ -60,7 +60,7 @@ class TicketPolicy extends BasePolicy
         }
 
         // Staff users need proper permissions
-        return $this->hasPermission($user, 'support_management.update');
+        return $this->hasPermission($user, 'edit-support-tickets');
     }
 
     /**
@@ -69,6 +69,6 @@ class TicketPolicy extends BasePolicy
     public function delete(User $user, Ticket $ticket): bool
     {
         // Only staff users can delete tickets
-        return $this->hasPermission($user, 'support_management.delete');
+        return $this->hasPermission($user, 'delete-support-tickets');
     }
 }

@@ -68,6 +68,107 @@ class TicketResponse extends Resource
     }
 
     /**
+     * Determine if the current user can view any resources.
+     */
+    public static function authorizedToViewAny(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Use policy for authorization
+        return $user->can('viewAny', \App\Models\TicketResponse::class);
+    }
+
+    /**
+     * Determine if the current user can view the resource.
+     */
+    public function authorizedToView(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Use policy for authorization
+        return $user->can('view', $this->resource);
+    }
+
+    /**
+     * Determine if the current user can create new resources.
+     */
+    public static function authorizedToCreate(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Use policy for authorization
+        return $user->can('create', \App\Models\TicketResponse::class);
+    }
+
+    /**
+     * Determine if the current user can update the given resource.
+     */
+    public function authorizedToUpdate(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Use policy for authorization
+        return $user->can('update', $this->resource);
+    }
+
+    /**
+     * Determine if the current user can delete the given resource.
+     */
+    public function authorizedToDelete(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Use policy for authorization
+        return $user->can('delete', $this->resource);
+    }
+
+    /**
+     * Build an "index" query for the given resource.
+     */
+    public static function indexQuery(NovaRequest $request, $query)
+    {
+        $query = $query->with(['ticket', 'user', 'adminUser']);
+
+        // Filter for customers to only show responses to their own tickets
+        $user = $request->user();
+        if ($user && $user->isCustomer()) {
+            $query->whereHas('ticket', function ($ticketQuery) use ($user) {
+                $ticketQuery->where('customer_id', $user->userable->id);
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Build a "detail" query for the given resource.
+     */
+    public static function detailQuery(NovaRequest $request, $query)
+    {
+        return static::indexQuery($request, $query);
+    }
+
+    /**
      * Get the fields displayed by the resource.
      *
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request

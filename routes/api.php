@@ -31,7 +31,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 |
 */
 
-Route::middleware(['auth:web'])->prefix('customer-portal')->name('customer-portal.')->group(function () {
+Route::middleware(['auth:web', 'api.customer.rate_limit'])->prefix('customer-portal')->name('customer-portal.')->group(function () {
 
     // Customer Profile Routes
     Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile.show');

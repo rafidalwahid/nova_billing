@@ -34,46 +34,30 @@ class EscalateTicket extends Action
      */
     public function handle(ActionFields $fields, Collection $models)
     {
-        $newPriority = $fields->priority;
+        $ticketService = app(\App\Services\TicketService::class);
         $escalationReason = $fields->escalation_reason;
         $escalatedCount = 0;
+        $errors = [];
 
         foreach ($models as $ticket) {
             if ($ticket instanceof Ticket) {
-                $updateData = [
-                    'priority' => $newPriority,
-                ];
-
-                // Update SLA due date based on new priority
-                $updateData['sla_due_at'] = Ticket::calculateSLADueDate($newPriority);
-
-                // Add escalation note to internal notes
-                $existingNotes = $ticket->internal_notes ?? '';
-                $timestamp = now()->format('Y-m-d H:i:s');
-                $user = auth()->user();
-                $userName = $user->name ?? 'System';
-                
-                $escalationNote = "[{$timestamp}] {$userName}: Ticket escalated to " . ucfirst($newPriority) . " priority";
-                if ($escalationReason) {
-                    $escalationNote .= " - Reason: {$escalationReason}";
-                }
-                
-                $updateData['internal_notes'] = $existingNotes ? $existingNotes . "\n\n" . $escalationNote : $escalationNote;
-
-                // If escalating to urgent, try to assign to a manager
-                if ($newPriority === Ticket::PRIORITY_URGENT && empty($ticket->assigned_to)) {
-                    $manager = $this->findAvailableManager($ticket->department_id);
-                    if ($manager) {
-                        $updateData['assigned_to'] = $manager->id;
+                try {
+                    // Use service for consistent business logic
+                    $success = $ticketService->escalateTicket($ticket, $escalationReason);
+                    if ($success) {
+                        $escalatedCount++;
                     }
+                } catch (\Exception $e) {
+                    $errors[] = "Ticket #{$ticket->ticket_number}: " . $e->getMessage();
                 }
-
-                $ticket->update($updateData);
-                $escalatedCount++;
             }
         }
 
-        return Action::message("Successfully escalated {$escalatedCount} ticket(s) to {$newPriority} priority.");
+        if (!empty($errors)) {
+            return Action::danger('Some escalations failed: ' . implode('; ', $errors));
+        }
+
+        return Action::message("Successfully escalated {$escalatedCount} ticket(s).");
     }
 
     /**
@@ -87,7 +71,7 @@ class EscalateTicket extends Action
         // Look for managers or senior roles in the same department first
         $managerRoles = Role::whereIn('name', [
             'System Administrator',
-            'Billing Manager', 
+            'Billing Manager',
             'Customer Support Manager',
             'IT Manager'
         ])->pluck('id');
@@ -110,15 +94,6 @@ class EscalateTicket extends Action
     public function fields(NovaRequest $request): array
     {
         return [
-            Select::make('New Priority', 'priority')
-                ->options([
-                    Ticket::PRIORITY_HIGH => 'High',
-                    Ticket::PRIORITY_URGENT => 'Urgent',
-                ])
-                ->rules('required')
-                ->default(Ticket::PRIORITY_HIGH)
-                ->help('Select the escalated priority level'),
-
             Textarea::make('Escalation Reason', 'escalation_reason')
                 ->rules('required')
                 ->rows(3)

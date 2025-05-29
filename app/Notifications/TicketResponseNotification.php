@@ -58,9 +58,7 @@ class TicketResponseNotification extends Notification implements ShouldQueue
             ? "View Ticket in Admin Panel"
             : "View My Ticket";
 
-        $actionUrl = $this->isCustomerResponse
-            ? url("/nova/resources/tickets/{$this->ticket->id}")
-            : url("/nova/resources/customer-tickets/{$this->ticket->id}");
+        $actionUrl = url("/nova/resources/tickets/{$this->ticket->id}");
 
         return (new MailMessage)
             ->subject($subject)

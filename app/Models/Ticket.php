@@ -333,31 +333,23 @@ class Ticket extends Model
     }
 
     /**
-     * Generate a unique ticket number using atomic database operations.
-     * This method ensures no duplicate ticket numbers across all creation methods.
+     * Generate a unique ticket number.
      *
      * @return string
      */
     public static function generateUniqueTicketNumber(): string
     {
-        return \DB::transaction(function () {
-            // Get the next sequential number atomically
-            $lastTicket = static::lockForUpdate()
-                ->orderBy('id', 'desc')
-                ->first();
+        // Simple approach: use timestamp + random number for uniqueness
+        $timestamp = now()->format('ymd');
+        $random = str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        $ticketNumber = "TKT-{$timestamp}-{$random}";
 
-            $nextNumber = $lastTicket ? $lastTicket->id + 1 : 1;
+        // Ensure uniqueness (very unlikely collision)
+        while (static::where('ticket_number', $ticketNumber)->exists()) {
+            $random = str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            $ticketNumber = "TKT-{$timestamp}-{$random}";
+        }
 
-            // Generate ticket number with consistent format
-            $ticketNumber = 'TKT-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-
-            // Double-check uniqueness (safety net)
-            while (static::where('ticket_number', $ticketNumber)->exists()) {
-                $nextNumber++;
-                $ticketNumber = 'TKT-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-            }
-
-            return $ticketNumber;
-        });
+        return $ticketNumber;
     }
 }
