@@ -64,7 +64,7 @@ class AttachmentController extends Controller
         ]);
 
         // Redirect back to Nova resource detail page
-        return redirect("/nova/resources/customer-ticket-responses/{$responseId}")
+        return redirect("/nova/resources/ticket-responses/{$responseId}")
             ->with('success', "Attachment '{$removedAttachment['original_name']}' removed successfully");
     }
 

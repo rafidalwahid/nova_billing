@@ -67,80 +67,7 @@ class TicketResponse extends Resource
         return 'Ticket Response';
     }
 
-    /**
-     * Determine if the current user can view any resources.
-     */
-    public static function authorizedToViewAny(Request $request): bool
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        // Use policy for authorization
-        return $user->can('viewAny', \App\Models\TicketResponse::class);
-    }
-
-    /**
-     * Determine if the current user can view the resource.
-     */
-    public function authorizedToView(Request $request): bool
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        // Use policy for authorization
-        return $user->can('view', $this->resource);
-    }
-
-    /**
-     * Determine if the current user can create new resources.
-     */
-    public static function authorizedToCreate(Request $request): bool
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        // Use policy for authorization
-        return $user->can('create', \App\Models\TicketResponse::class);
-    }
-
-    /**
-     * Determine if the current user can update the given resource.
-     */
-    public function authorizedToUpdate(Request $request): bool
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        // Use policy for authorization
-        return $user->can('update', $this->resource);
-    }
-
-    /**
-     * Determine if the current user can delete the given resource.
-     */
-    public function authorizedToDelete(Request $request): bool
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        // Use policy for authorization
-        return $user->can('delete', $this->resource);
-    }
+    // Authorization methods removed - using base Resource class authorization with policies
 
     /**
      * Build an "index" query for the given resource.
@@ -149,7 +76,7 @@ class TicketResponse extends Resource
     {
         $query = $query->with(['ticket', 'user', 'adminUser']);
 
-        // Filter for customers to only show responses to their own tickets
+        // Apply customer data isolation for responses through ticket relationship
         $user = $request->user();
         if ($user && $user->isCustomer()) {
             $query->whereHas('ticket', function ($ticketQuery) use ($user) {
@@ -242,17 +169,19 @@ class TicketResponse extends Resource
             })
                 ->onlyOnIndex(),
 
-            Text::make('Customer Files', function () {
+            Text::make('Attached Files', function () use ($request) {
                 // Cache the result to avoid repeated processing
                 static $fileCache = [];
-                $cacheKey = "response_{$this->id}_files";
+                $user = $request->user();
+                $isCustomer = $user && $user->isCustomer();
+                $cacheKey = "response_{$this->id}_files_" . ($isCustomer ? 'customer' : 'admin');
 
                 if (isset($fileCache[$cacheKey])) {
                     return $fileCache[$cacheKey];
                 }
 
                 if (!$this->attachments || !is_array($this->attachments) || empty($this->attachments)) {
-                    $result = '<span class="text-gray-500">No files attached by customer</span>';
+                    $result = '<span class="text-gray-500">No files attached</span>';
                     $fileCache[$cacheKey] = $result;
                     return $result;
                 }
@@ -262,25 +191,38 @@ class TicketResponse extends Resource
                     $name = $attachment['original_name'] ?? 'Unknown';
                     $size = isset($attachment['file_size']) ?
                         \App\Services\FileUploadService::formatFileSize($attachment['file_size']) : '';
-                    $downloadUrl = $attachment['download_url'] ?? '#';
                     $uploadedAt = $attachment['uploaded_at'] ?? 'Unknown';
 
-                    // Use admin download route for better control
-                    $adminDownloadUrl = "/admin/download-attachment/{$this->id}/{$index}";
-
-                    $attachmentList[] = "<div class='border border-gray-200 rounded-lg p-3 mb-3 bg-gray-50'>" .
-                                      "<div class='flex items-center justify-between mb-2'>" .
-                                      "<div class='flex items-center'>" .
-                                      "<span class='text-blue-500 mr-2'>📎</span>" .
-                                      "<a href='{$adminDownloadUrl}' target='_blank' class='text-blue-600 hover:text-blue-800 font-medium text-sm'>{$name}</a>" .
-                                      "</div>" .
-                                      ($size ? "<span class='text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded'>{$size}</span>" : '') .
-                                      "</div>" .
-                                      "<div class='flex items-center justify-between'>" .
-                                      "<div class='text-xs text-gray-500'>Uploaded: {$uploadedAt}</div>" .
-                                      "<a href='{$adminDownloadUrl}' target='_blank' class='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'>Download</a>" .
-                                      "</div>" .
-                                      "</div>";
+                    if ($isCustomer) {
+                        // Customer view - simpler display with public download links
+                        $publicDownloadUrl = $attachment['download_url'] ?? '#';
+                        $attachmentList[] = "<div class='border border-gray-200 rounded-lg p-3 mb-2 bg-blue-50'>" .
+                                          "<div class='flex items-center justify-between'>" .
+                                          "<div class='flex items-center'>" .
+                                          "<span class='text-blue-500 mr-2'>📎</span>" .
+                                          "<span class='text-gray-800 font-medium text-sm'>{$name}</span>" .
+                                          ($size ? "<span class='text-xs text-gray-500 ml-2'>({$size})</span>" : '') .
+                                          "</div>" .
+                                          "<a href='{$publicDownloadUrl}' target='_blank' class='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'>Download</a>" .
+                                          "</div>" .
+                                          "</div>";
+                    } else {
+                        // Admin view - detailed display with admin download route
+                        $adminDownloadUrl = "/admin/download-attachment/{$this->id}/{$index}";
+                        $attachmentList[] = "<div class='border border-gray-200 rounded-lg p-3 mb-3 bg-gray-50'>" .
+                                          "<div class='flex items-center justify-between mb-2'>" .
+                                          "<div class='flex items-center'>" .
+                                          "<span class='text-blue-500 mr-2'>📎</span>" .
+                                          "<a href='{$adminDownloadUrl}' target='_blank' class='text-blue-600 hover:text-blue-800 font-medium text-sm'>{$name}</a>" .
+                                          "</div>" .
+                                          ($size ? "<span class='text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded'>{$size}</span>" : '') .
+                                          "</div>" .
+                                          "<div class='flex items-center justify-between'>" .
+                                          "<div class='text-xs text-gray-500'>Uploaded: {$uploadedAt}</div>" .
+                                          "<a href='{$adminDownloadUrl}' target='_blank' class='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200'>Download</a>" .
+                                          "</div>" .
+                                          "</div>";
+                    }
                 }
 
                 $result = "<div class='space-y-2'>" . implode('', $attachmentList) . "</div>";
@@ -329,7 +271,19 @@ class TicketResponse extends Resource
      */
     public function filters(NovaRequest $request)
     {
-        return [];
+        $user = $request->user();
+
+        // Basic filters for all users
+        $filters = [
+            new \App\Nova\Filters\ResponseType,
+        ];
+
+        // Add admin-only filters
+        if ($user && $user->isAdmin()) {
+            $filters[] = new \App\Nova\Filters\ResponseWithAttachments;
+        }
+
+        return $filters;
     }
 
     /**
@@ -351,6 +305,16 @@ class TicketResponse extends Resource
      */
     public function actions(NovaRequest $request)
     {
+        $user = $request->user();
+
+        // Customers can manage attachments on their own responses
+        if ($user && $user->isCustomer()) {
+            return [
+                \App\Nova\Actions\ManageMyAttachments::make(),
+            ];
+        }
+
+        // Admin/Staff actions - unified attachment management
         return [
             \App\Nova\Actions\AdminAddAttachment::make(),
             \App\Nova\Actions\AdminRemoveAttachment::make(),

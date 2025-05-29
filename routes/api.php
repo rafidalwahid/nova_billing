@@ -46,6 +46,8 @@ Route::middleware(['auth:web', 'api.customer.rate_limit'])->prefix('customer-por
         Route::get('/{ticket}/responses', [CustomerTicketController::class, 'getResponses'])->name('responses');
         Route::post('/{ticket}/responses', [CustomerTicketController::class, 'addResponse'])->name('add-response');
         Route::post('/{ticket}/attachments', [CustomerTicketController::class, 'uploadAttachment'])->name('upload-attachment');
+        Route::get('/responses/{response}/attachments/{index}/download', [CustomerTicketController::class, 'downloadAttachment'])->name('download-attachment');
+        Route::get('/responses/{response}/attachments', [CustomerTicketController::class, 'getAttachments'])->name('get-attachments');
     });
 
     // Customer Statistics/Dashboard Data (future expansion)

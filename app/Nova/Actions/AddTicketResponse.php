@@ -10,6 +10,7 @@ use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Fields\Boolean;
+use Laravel\Nova\Fields\File;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use App\Models\Ticket;
 use App\Models\TicketResponse;
@@ -52,12 +53,27 @@ class AddTicketResponse extends Action
         foreach ($models as $ticket) {
             if ($ticket instanceof Ticket) {
                 try {
-                    // Delegate to service
-                    $ticketService->addResponse($ticket, [
+                    // Create the response using service
+                    $response = $ticketService->addResponse($ticket, [
                         'admin_user_id' => $adminUser->id,
                         'message' => $fields->message,
                         'is_internal' => $fields->is_internal,
                     ]);
+
+                    // Handle file attachment if provided
+                    if ($fields->attachment) {
+                        $fileUploadService = app(\App\Services\FileUploadService::class);
+                        $attachment = $fileUploadService->uploadTicketAttachment(
+                            $fields->attachment,
+                            $ticket->id
+                        );
+
+                        // Add attachment to response
+                        $existingAttachments = $response->attachments ?? [];
+                        $existingAttachments[] = $attachment;
+                        $response->update(['attachments' => $existingAttachments]);
+                    }
+
                     $responsesAdded++;
                 } catch (\Exception $e) {
                     $errors[] = "Ticket #{$ticket->ticket_number}: " . $e->getMessage();
@@ -89,6 +105,13 @@ class AddTicketResponse extends Action
             Boolean::make('Internal Note', 'is_internal')
                 ->default(false)
                 ->help('Check if this is an internal note (not visible to customers)'),
+
+            File::make('Attachment')
+                ->disk('public')
+                ->path('ticket-attachments')
+                ->acceptedTypes('.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip')
+                ->help('Optional: Upload a file (Images, Documents, Archives - Max 10MB)')
+                ->nullable(),
         ];
     }
 

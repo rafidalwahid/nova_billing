@@ -265,7 +265,7 @@ class CustomerTicketController extends Controller
     }
 
     /**
-     * Upload attachment for a ticket (placeholder for future implementation).
+     * Upload attachment for a ticket.
      *
      * @param Request $request
      * @param int $ticketId
@@ -279,19 +279,194 @@ class CustomerTicketController extends Controller
             // Verify ticket exists and customer has access
             $ticket = $this->ticketService->getCustomerTicket($customer, $ticketId);
 
-            // File upload functionality placeholder - ready for future implementation
+            // Validate file upload
+            $request->validate([
+                'file' => [
+                    'required',
+                    'file',
+                    'max:10240', // 10MB in KB
+                    'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip'
+                ],
+                'response_message' => 'nullable|string|max:1000'
+            ]);
+
+            // Upload file using service
+            $fileUploadService = app(\App\Services\FileUploadService::class);
+            $uploadResult = $fileUploadService->uploadTicketAttachment(
+                $request->file('file'),
+                $ticket->id
+            );
+
+            // If response message is provided, create a response with the attachment
+            if ($request->filled('response_message')) {
+                $response = $this->ticketService->addCustomerResponse(
+                    $ticket,
+                    $request->user(),
+                    $request->input('response_message')
+                );
+
+                // Add attachment to the response
+                $response->update(['attachments' => [$uploadResult]]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'File uploaded and response added successfully.',
+                    'ticket_number' => $ticket->ticket_number,
+                    'response_id' => $response->id,
+                    'attachment' => $uploadResult
+                ]);
+            }
+
+            // Just upload the file without creating a response
             return response()->json([
-                'message' => 'File attachment functionality will be implemented in a future update.',
+                'success' => true,
+                'message' => 'File uploaded successfully.',
                 'ticket_number' => $ticket->ticket_number,
-                'supported_formats' => ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png'],
-                'max_size' => '10MB'
-            ], 501); // 501 Not Implemented
+                'attachment' => $uploadResult
+            ]);
 
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'error' => 'Ticket not found.',
-                'message' => 'The requested ticket does not exist or you do not have permission to access it.'
+                'ticket_id' => $ticketId
             ], 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'File validation failed.',
+                'validation_errors' => $e->errors()
+            ], 422);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'ticket_number' => $ticket->ticket_number ?? null
+            ], 400);
+        } catch (\Exception $e) {
+            \Log::error('File upload failed', [
+                'ticket_id' => $ticketId,
+                'customer_id' => $customer->id ?? null,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'File upload failed. Please try again.',
+                'ticket_id' => $ticketId
+            ], 500);
+        }
+    }
+
+    /**
+     * Download attachment for a customer's ticket response.
+     *
+     * @param Request $request
+     * @param int $responseId
+     * @param int $attachmentIndex
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadAttachment(Request $request, int $responseId, int $attachmentIndex)
+    {
+        try {
+            $customer = $request->user()->userable;
+
+            // Find the response
+            $response = \App\Models\TicketResponse::findOrFail($responseId);
+
+            // Verify customer has access to this response
+            if (!$response->ticket || $response->ticket->customer_id !== $customer->id) {
+                abort(403, 'Access denied - you do not have permission to access this attachment.');
+            }
+
+            // Verify attachment exists
+            if (!$response->attachments ||
+                !is_array($response->attachments) ||
+                !isset($response->attachments[$attachmentIndex])) {
+                abort(404, 'Attachment not found.');
+            }
+
+            $attachment = $response->attachments[$attachmentIndex];
+            $filePath = $attachment['file_path'] ?? null;
+            $originalName = $attachment['original_name'] ?? 'download';
+
+            if (!$filePath || !\Storage::disk('public')->exists($filePath)) {
+                abort(404, 'File not found on disk.');
+            }
+
+            // Return file download response
+            return \Storage::disk('public')->download($filePath, $originalName);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            abort(404, 'Response not found.');
+        } catch (\Exception $e) {
+            \Log::error('Customer attachment download failed', [
+                'response_id' => $responseId,
+                'attachment_index' => $attachmentIndex,
+                'customer_id' => $customer->id ?? null,
+                'error' => $e->getMessage()
+            ]);
+
+            abort(500, 'Download failed. Please try again.');
+        }
+    }
+
+    /**
+     * Get attachments for a customer's ticket response.
+     *
+     * @param Request $request
+     * @param int $responseId
+     * @return JsonResponse
+     */
+    public function getAttachments(Request $request, int $responseId): JsonResponse
+    {
+        try {
+            $customer = $request->user()->userable;
+
+            // Find the response
+            $response = \App\Models\TicketResponse::findOrFail($responseId);
+
+            // Verify customer has access to this response
+            if (!$response->ticket || $response->ticket->customer_id !== $customer->id) {
+                return response()->json([
+                    'error' => 'Access denied - you do not have permission to access this response.'
+                ], 403);
+            }
+
+            // Get attachment information
+            $fileUploadService = app(\App\Services\FileUploadService::class);
+            $attachments = [];
+
+            if ($response->attachments && is_array($response->attachments)) {
+                foreach ($response->attachments as $index => $attachment) {
+                    $attachmentInfo = $fileUploadService->getAttachmentInfo($attachment);
+                    $attachmentInfo['index'] = $index;
+                    $attachmentInfo['download_url'] = route('customer-portal.tickets.download-attachment', [
+                        'response' => $responseId,
+                        'index' => $index
+                    ]);
+                    $attachments[] = $attachmentInfo;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'response_id' => $responseId,
+                'ticket_number' => $response->ticket->ticket_number,
+                'attachments' => $attachments,
+                'total_attachments' => count($attachments)
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Response not found.'
+            ], 404);
+        } catch (\Exception $e) {
+            \Log::error('Customer attachment list failed', [
+                'response_id' => $responseId,
+                'customer_id' => $customer->id ?? null,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to retrieve attachments. Please try again.'
+            ], 500);
         }
     }
 

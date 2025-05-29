@@ -54,13 +54,8 @@ class Ticket extends Resource
     {
         $query = $query->with(['customer', 'department', 'assignedTo']);
 
-        // If user is a customer, only show their own tickets
-        $user = $request->user();
-        if ($user && $user->isCustomer()) {
-            $query->where('customer_id', $user->userable->id);
-        }
-
-        return $query;
+        // Apply customer data isolation using base class method
+        return static::applyCustomerDataIsolation($request, $query, 'customer_id');
     }
 
     /**

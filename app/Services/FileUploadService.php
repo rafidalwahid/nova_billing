@@ -13,7 +13,7 @@ class FileUploadService
      */
     const ALLOWED_TYPES = [
         'image/jpeg',
-        'image/jpg', 
+        'image/jpg',
         'image/png',
         'image/gif',
         'application/pdf',
@@ -44,7 +44,7 @@ class FileUploadService
 
         // Generate unique filename
         $fileName = $this->generateFileName($file);
-        
+
         // Store file
         $filePath = $file->storeAs(
             "ticket-attachments/{$ticketId}",
@@ -101,10 +101,10 @@ class FileUploadService
     {
         $extension = $file->getClientOriginalExtension();
         $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        
+
         // Sanitize filename
         $baseName = Str::slug($baseName);
-        
+
         // Add timestamp and random string for uniqueness
         return time() . '_' . Str::random(8) . '_' . $baseName . '.' . $extension;
     }
@@ -121,6 +121,73 @@ class FileUploadService
     }
 
     /**
+     * Get file information for an attachment.
+     *
+     * @param array $attachment
+     * @return array
+     */
+    public function getAttachmentInfo(array $attachment): array
+    {
+        $filePath = $attachment['file_path'] ?? null;
+        $exists = $filePath ? Storage::disk('public')->exists($filePath) : false;
+
+        return [
+            'original_name' => $attachment['original_name'] ?? 'Unknown',
+            'file_name' => $attachment['file_name'] ?? 'Unknown',
+            'file_size' => $attachment['file_size'] ?? 0,
+            'file_size_human' => self::formatFileSize($attachment['file_size'] ?? 0),
+            'mime_type' => $attachment['mime_type'] ?? 'application/octet-stream',
+            'uploaded_at' => $attachment['uploaded_at'] ?? null,
+            'exists_on_disk' => $exists,
+            'download_url' => $exists ? Storage::disk('public')->url($filePath) : null,
+        ];
+    }
+
+    /**
+     * Format file size in human readable format.
+     *
+     * @param int $bytes
+     * @return string
+     */
+    public static function formatFileSize(int $bytes): string
+    {
+        if ($bytes >= 1073741824) {
+            return number_format($bytes / 1073741824, 2) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return number_format($bytes / 1024, 2) . ' KB';
+        } else {
+            return $bytes . ' bytes';
+        }
+    }
+
+    /**
+     * Get supported file types for display.
+     *
+     * @return array
+     */
+    public static function getSupportedFileTypes(): array
+    {
+        return [
+            'images' => ['jpg', 'jpeg', 'png', 'gif'],
+            'documents' => ['pdf', 'doc', 'docx', 'txt'],
+            'archives' => ['zip'],
+        ];
+    }
+
+    /**
+     * Check if file type is supported.
+     *
+     * @param string $mimeType
+     * @return bool
+     */
+    public static function isFileTypeSupported(string $mimeType): bool
+    {
+        return in_array($mimeType, self::ALLOWED_TYPES);
+    }
+
+    /**
      * Get file download URL.
      *
      * @param string $filePath
@@ -129,24 +196,6 @@ class FileUploadService
     public function getDownloadUrl(string $filePath): string
     {
         return Storage::disk('public')->url($filePath);
-    }
-
-    /**
-     * Get human readable file size.
-     *
-     * @param int $bytes
-     * @return string
-     */
-    public static function formatFileSize(int $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-
-        $bytes /= pow(1024, $pow);
-
-        return round($bytes, 2) . ' ' . $units[$pow];
     }
 
     /**

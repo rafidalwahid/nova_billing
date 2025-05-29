@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionResponse;
 use Laravel\Nova\Fields\ActionFields;
-use Laravel\Nova\Fields\Text;
+use Laravel\Nova\Fields\Select;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 class AdminRemoveAttachment extends Action
@@ -104,10 +104,29 @@ class AdminRemoveAttachment extends Action
      */
     public function fields(NovaRequest $request): array
     {
+        // Get the selected response to show its attachments
+        $responseId = $request->get('resources');
+        $attachmentOptions = [];
+
+        if ($responseId && is_array($responseId) && count($responseId) === 1) {
+            $response = \App\Models\TicketResponse::find($responseId[0]);
+            if ($response && $response->attachments && is_array($response->attachments)) {
+                foreach ($response->attachments as $index => $attachment) {
+                    $fileName = $attachment['original_name'] ?? "Attachment {$index}";
+                    $attachmentOptions[$fileName] = $fileName;
+                }
+            }
+        }
+
+        if (empty($attachmentOptions)) {
+            $attachmentOptions = ['no_attachments' => 'No attachments found'];
+        }
+
         return [
-            Text::make('Attachment to Remove', 'attachment_to_remove')
+            Select::make('Attachment to Remove', 'attachment_to_remove')
+                ->options($attachmentOptions)
                 ->rules('required')
-                ->help('Enter the exact filename to remove (e.g., "screenshot.png"). Check the response detail view to see current attachments.'),
+                ->help('Select the attachment to remove from this response.'),
         ];
     }
 
