@@ -51,7 +51,7 @@ class AdminUserSeeder extends Seeder
                 'user' => [
                     'name' => 'Sarah Chen',
                     'email' => 'sarah.chen@billingcorp.com',
-                    'password' => Hash::make('BillingPro456!'),
+                    'password' => Hash::make('password'),
                 ],
                 'profile' => [
                     'first_name' => 'Sarah',
@@ -66,7 +66,7 @@ class AdminUserSeeder extends Seeder
                 'user' => [
                     'name' => 'David Rodriguez',
                     'email' => 'david.rodriguez@billingcorp.com',
-                    'password' => Hash::make('Support789!'),
+                    'password' => Hash::make('password'),
                 ],
                 'profile' => [
                     'first_name' => 'David',
@@ -81,7 +81,7 @@ class AdminUserSeeder extends Seeder
                 'user' => [
                     'name' => 'Jennifer Williams',
                     'email' => 'jennifer.williams@billingcorp.com',
-                    'password' => Hash::make('Finance321!'),
+                    'password' => Hash::make('password'),
                 ],
                 'profile' => [
                     'first_name' => 'Jennifer',
@@ -96,7 +96,7 @@ class AdminUserSeeder extends Seeder
                 'user' => [
                     'name' => 'Michael Johnson',
                     'email' => 'michael.johnson@billingcorp.com',
-                    'password' => Hash::make('Sales654!'),
+                    'password' => Hash::make('password'),
                 ],
                 'profile' => [
                     'first_name' => 'Michael',
@@ -111,7 +111,7 @@ class AdminUserSeeder extends Seeder
                 'user' => [
                     'name' => 'Lisa Anderson',
                     'email' => 'lisa.anderson@billingcorp.com',
-                    'password' => Hash::make('Revenue987!'),
+                    'password' => Hash::make('password'),
                 ],
                 'profile' => [
                     'first_name' => 'Lisa',
@@ -126,7 +126,7 @@ class AdminUserSeeder extends Seeder
                 'user' => [
                     'name' => 'Robert Kim',
                     'email' => 'robert.kim@billingcorp.com',
-                    'password' => Hash::make('Customer147!'),
+                    'password' => Hash::make('password'),
                 ],
                 'profile' => [
                     'first_name' => 'Robert',

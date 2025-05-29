@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             ProductFeatureSeeder::class,
             OrderSeeder::class, // Add orders before invoices
             InvoiceSeeder::class,
+            PaymentMethodSeeder::class, // Add payment methods before payments
             PaymentSeeder::class, // Add payments after invoices
             SubscriptionSeeder::class, // Add subscriptions after orders
             HostingAccountSeeder::class, // Add hosting accounts after subscriptions

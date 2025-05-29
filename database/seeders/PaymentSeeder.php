@@ -30,6 +30,11 @@ class PaymentSeeder extends Seeder
         $transactionsCreated = 0;
 
         foreach ($invoices as $invoice) {
+            // First, ensure invoice is in a payable status (sent or overdue)
+            if ($invoice->status === Invoice::STATUS_DRAFT) {
+                $invoice->update(['status' => Invoice::STATUS_SENT]);
+            }
+
             // Create 1-3 payments per invoice
             $paymentCount = rand(1, 3);
             $remainingBalance = $invoice->total;
@@ -103,10 +108,17 @@ class PaymentSeeder extends Seeder
 
             // Update invoice balance and status
             $newBalance = max(0, $invoice->total - $invoice->payments()->sum('amount'));
+
+            // Determine new status based on balance and current status
+            $newStatus = $invoice->status;
+            if ($newBalance <= 0 && in_array($invoice->status, [Invoice::STATUS_SENT, Invoice::STATUS_OVERDUE])) {
+                $newStatus = Invoice::STATUS_PAID;
+            }
+
             $invoice->update([
                 'balance_due' => $newBalance,
-                'status' => $newBalance <= 0 ? Invoice::STATUS_PAID : $invoice->status,
-                'paid_date' => $newBalance <= 0 ? $invoice->payments()->latest()->first()?->payment_date : null,
+                'status' => $newStatus,
+                'paid_date' => $newStatus === Invoice::STATUS_PAID ? $invoice->payments()->latest()->first()?->payment_date : null,
             ]);
         }
 
