@@ -74,7 +74,8 @@ class Customer extends Resource
     public static function indexQuery(NovaRequest $request, $query)
     {
         // Only load essential relationships for index view
-        $query = $query->with(['user']);
+        $query = $query->with(['user'])
+            ->withCount(['tickets', 'orders', 'subscriptions']);
 
         // Apply customer data isolation
         return static::applyCustomerDataIsolation($request, $query, 'id');
@@ -273,7 +274,18 @@ class Customer extends Resource
      */
     public function filters(NovaRequest $request)
     {
-        return [];
+        $user = $request->user();
+
+        // Customers don't need filters (they only see their own data)
+        if ($user && $user->isCustomer()) {
+            return [];
+        }
+
+        // Admin filters
+        return [
+            new \App\Nova\Filters\CustomerStatus,
+            new \App\Nova\Filters\CustomerActivity,
+        ];
     }
 
     /**

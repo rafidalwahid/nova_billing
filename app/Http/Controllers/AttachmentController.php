@@ -68,6 +68,51 @@ class AttachmentController extends Controller
             ->with('success', "Attachment '{$removedAttachment['original_name']}' removed successfully");
     }
 
+    public function customerDownloadAttachment(Request $request, $responseId, $attachmentIndex)
+    {
+        $user = auth()->user();
+
+        // Verify user is authenticated and is a customer
+        if (!$user || !$user->isCustomer()) {
+            abort(403, 'Access denied - customer only');
+        }
+
+        $response = TicketResponse::find($responseId);
+
+        // Verify response exists
+        if (!$response) {
+            abort(404, 'Response not found');
+        }
+
+        // Verify customer has access to this response (owns the ticket)
+        if (!$response->ticket || $response->ticket->customer_id !== $user->userable_id) {
+            abort(403, 'Access denied - you do not have permission to access this attachment');
+        }
+
+        // Verify attachment exists
+        if (!$response->attachments || !is_array($response->attachments) || !isset($response->attachments[$attachmentIndex])) {
+            abort(404, 'Attachment not found');
+        }
+
+        $attachment = $response->attachments[$attachmentIndex];
+        $filePath = $attachment['file_path'] ?? null;
+        $originalName = $attachment['original_name'] ?? 'download';
+
+        if (!$filePath || !\Storage::disk('public')->exists($filePath)) {
+            abort(404, 'File not found on disk');
+        }
+
+        \Log::info('Customer downloading attachment', [
+            'user_id' => $user->id,
+            'response_id' => $responseId,
+            'attachment_index' => $attachmentIndex,
+            'filename' => $originalName
+        ]);
+
+        // Return file download response
+        return \Storage::disk('public')->download($filePath, $originalName);
+    }
+
     public function downloadAttachment(Request $request, $responseId, $attachmentIndex)
     {
         $user = auth()->user();

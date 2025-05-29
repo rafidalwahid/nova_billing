@@ -109,6 +109,17 @@ class Ticket extends Model
     }
 
     /**
+     * Get the user that owns the ticket (through customer relationship).
+     * This is a simple method that returns the customer's user.
+     *
+     * @return \App\Models\User|null
+     */
+    public function user()
+    {
+        return $this->customer?->user;
+    }
+
+    /**
      * Get the formatted ticket number.
      */
     protected function formattedTicketNumber(): Attribute

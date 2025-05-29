@@ -71,4 +71,18 @@ class TicketPolicy extends BasePolicy
         // Only staff users can delete tickets
         return $this->hasPermission($user, 'delete-support-tickets');
     }
+
+    /**
+     * Determine whether the user can run actions on the model.
+     */
+    public function runAction(User $user, Ticket $ticket): bool
+    {
+        // Customers can run actions on their own tickets
+        if ($user->isCustomer()) {
+            return $this->isCustomerOwner($user, $ticket);
+        }
+
+        // Staff users need proper permissions
+        return $this->hasPermission($user, 'edit-support-tickets');
+    }
 }

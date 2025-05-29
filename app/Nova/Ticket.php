@@ -404,14 +404,10 @@ class Ticket extends Resource
                     return $request->user() && $request->user()->isCustomer();
                 }),
 
-            Text::make('Conversation', function () {
-                // Only load this on detail view and cache the result
-                static $conversationCache = [];
-                $cacheKey = "ticket_{$this->id}_conversation";
-
-                if (isset($conversationCache[$cacheKey])) {
-                    return $conversationCache[$cacheKey];
-                }
+            Text::make('Conversation', function ($request) {
+                // Get current user to determine download URL type
+                $currentUser = $request ? $request->user() : auth()->user();
+                $isCurrentUserCustomer = $currentUser && $currentUser->isCustomer();
 
                 // Get all responses ordered by creation date
                 $responses = $this->responses()
@@ -420,9 +416,7 @@ class Ticket extends Resource
                     ->get();
 
                 if ($responses->isEmpty()) {
-                    $result = '<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">No responses yet. Use the "Reply" action above to start the conversation.</div>';
-                    $conversationCache[$cacheKey] = $result;
-                    return $result;
+                    return '<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">No responses yet. Use the "Reply" action above to start the conversation.</div>';
                 }
 
                 $conversationHtml = '<div class="space-y-4">';
@@ -430,6 +424,11 @@ class Ticket extends Resource
                 foreach ($responses as $response) {
                     $isCustomer = $response->type === \App\Models\TicketResponse::TYPE_CUSTOMER;
                     $isInternal = $response->is_internal;
+
+                    // Skip internal notes for customers
+                    if ($isCurrentUserCustomer && $isInternal) {
+                        continue;
+                    }
 
                     // Determine author and styling
                     if ($isCustomer) {
@@ -451,7 +450,7 @@ class Ticket extends Resource
                     $conversationHtml .= "<div class='flex items-center'>";
                     $conversationHtml .= "<span class='mr-2'>{$icon}</span>";
                     $conversationHtml .= "<span class='font-medium {$authorColor}'>{$author}</span>";
-                    if ($isInternal) {
+                    if ($isInternal && !$isCurrentUserCustomer) {
                         $conversationHtml .= "<span class='ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded'>Internal Note</span>";
                     }
                     $conversationHtml .= "</div>";
@@ -469,7 +468,11 @@ class Ticket extends Resource
                             $name = $attachment['original_name'] ?? 'Unknown';
                             $size = isset($attachment['file_size']) ?
                                 \App\Services\FileUploadService::formatFileSize($attachment['file_size']) : '';
-                            $downloadUrl = "/admin/download-attachment/{$response->id}/{$index}";
+
+                            // Use appropriate download URL based on user type
+                            $downloadUrl = $isCurrentUserCustomer
+                                ? "/customer/download-attachment/{$response->id}/{$index}"
+                                : "/admin/download-attachment/{$response->id}/{$index}";
 
                             $conversationHtml .= "<div class='flex items-center justify-between bg-white rounded p-2 mb-1'>";
                             $conversationHtml .= "<div class='flex items-center'>";
@@ -490,7 +493,6 @@ class Ticket extends Resource
 
                 $conversationHtml .= '</div>';
 
-                $conversationCache[$cacheKey] = $conversationHtml;
                 return $conversationHtml;
             })
                 ->onlyOnDetail()

@@ -51,6 +51,28 @@ class Customer extends Model
     ];
 
     /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($customer) {
+            // Ensure status is set
+            if (is_null($customer->status)) {
+                $customer->status = true;
+            }
+        });
+
+        static::updating(function ($customer) {
+            // Update last_login when status changes to active
+            if ($customer->isDirty('status') && $customer->status) {
+                $customer->last_login = now();
+            }
+        });
+    }
+
+    /**
      * Get the user record associated with the customer.
      *
      * @return \Illuminate\Database\Eloquent\Relations\MorphOne
@@ -58,6 +80,46 @@ class Customer extends Model
     public function user(): MorphOne
     {
         return $this->morphOne(User::class, 'userable');
+    }
+
+    /**
+     * Scope a query to only include active customers.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
+
+    /**
+     * Scope a query to only include inactive customers.
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('status', false);
+    }
+
+    /**
+     * Scope a query to customers with recent activity.
+     */
+    public function scopeRecentlyActive($query, $days = 30)
+    {
+        return $query->where('last_login', '>=', now()->subDays($days));
+    }
+
+    /**
+     * Check if customer is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->status === true;
+    }
+
+    /**
+     * Check if customer has recent activity.
+     */
+    public function hasRecentActivity($days = 30): bool
+    {
+        return $this->last_login && $this->last_login->gte(now()->subDays($days));
     }
 
     /**
